@@ -24,6 +24,7 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::any_of;
 using std::copy;
 using std::domain_error;
 using std::endl;
@@ -123,6 +124,11 @@ bool Expression::Less(const Expression& e) const {
   return ptr_->Less(*(e.ptr_));
 }
 
+bool Expression::PossibleDivisionByZero() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->PossibleDivisionByZero();
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   const double res{ptr_->Evaluate(env)};
@@ -179,20 +185,18 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   if (lhs.get_kind() == ExpressionKind::Add) {
     add_factory = static_pointer_cast<ExpressionAdd>(lhs.ptr_);
     if (rhs.get_kind() == ExpressionKind::Add) {
-      // 1. (e_1 + ... + e_n) + (e_{n+1} + ... + e_{m})
-      // => (e_1 + ... + e_n + e_{n+1} + ... + e_{m})
-      add_factory.Add(static_pointer_cast<ExpressionAdd>(rhs.ptr_));
-    } else {
-      // 2. (e_1 + ... + e_n) + rhs
+      // 1. (e_1 + ... + e_n) + rhs
+      // AddExpression method takes care of the case where rhs is another
+      // addition.
       add_factory.AddExpression(rhs);
     }
   } else {
     if (rhs.get_kind() == ExpressionKind::Add) {
-      // 3. lhs + (e_1 + ... + e_n)
+      // 2. lhs + (e_1 + ... + e_n)
       add_factory = static_pointer_cast<ExpressionAdd>(rhs.ptr_);
       add_factory.AddExpression(lhs);
     } else {
-      // nothing to flatten: return lhs + rhs
+      // Nothing to flatten: return lhs + rhs.
       add_factory.AddExpression(lhs);
       add_factory.AddExpression(rhs);
     }
@@ -237,11 +241,12 @@ Expression operator-(Expression lhs, const double rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
-  // Simplification: E - E => 0
-  if (lhs.EqualTo(rhs)) {
+  // Simplification: E - E => 0  if E is divide-by-zero free.
+  if (lhs.EqualTo(rhs) && !lhs.PossibleDivisionByZero()) {
     lhs = Expression::Zero();
     return lhs;
   }
+
   // Simplification: x - 0 => x
   if (rhs.EqualTo(Expression::Zero())) {
     return lhs;
@@ -336,15 +341,16 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     lhs = -lhs;
     return lhs;
   }
-  // Simplification: 0 * x => 0
-  if (lhs.EqualTo(Expression::Zero())) {
+  // Simplification: 0 * E => 0  if E is divide-by-zero free.
+  if (lhs.EqualTo(Expression::Zero()) && !rhs.PossibleDivisionByZero()) {
     return lhs;
   }
-  // Simplification: x * 0 => 0
+  // Simplification: E * 0 => 0  if E is divide-by-zero free.
   if (rhs.EqualTo(Expression::Zero())) {
     lhs = Expression::Zero();
     return lhs;
   }
+
   // Pow-related simplifications.
   if (lhs.get_kind() == ExpressionKind::Pow) {
     const auto lhs_ptr(static_pointer_cast<ExpressionPow>(lhs.ptr_));
@@ -353,29 +359,51 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
       const Expression& e3{rhs_ptr->get_1st_expression()};
       if (e1.EqualTo(e3)) {
-        // Simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
-        //                 => pow(e1, e2 + e4)
         const Expression& e2{lhs_ptr->get_2nd_expression()};
         const Expression& e4{rhs_ptr->get_2nd_expression()};
-        lhs = pow(e1, e2 + e4);
-        return lhs;
+        if (e2.get_kind() == ExpressionKind::Constant &&
+            e4.get_kind() == ExpressionKind::Constant) {
+          const double c2 = e2.Evaluate();
+          const double c4 = e4.Evaluate();
+          if ((c2 >= 0 && c4 >= 0) || (c2 <= 0 && c4 <= 0)) {
+            // Simplification:
+            // pow(e1, c2) * pow(e3, c4)) => pow(e1, c2 + c4)
+            // if e1 == e3 && ((c2 >= 0 && c4 >= 0) || (c2 <= 0 && c4 <= 0))
+            //
+            // Note: For example, we have E^2 * E^3 => E^5 and E^-2 * E^-3 =>
+            // E^-5.  However, we don't simplify E^3 * E^-1 => E^2 because if E
+            // is evaluated to zero, E^2 => 0 while E^3 * E^-1 is nan.
+            lhs = pow(e1, c2 + c4);
+            return lhs;
+          }
+        }
       }
     }
     if (e1.EqualTo(rhs)) {
-      // Simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
+      // Simplification: pow(e1, c2) * e1 => pow(e1, c2 + 1) if c2 >= 0.
       const Expression& e2{lhs_ptr->get_2nd_expression()};
-      lhs = pow(e1, e2 + 1);
-      return lhs;
+      if (e2.get_kind() == ExpressionKind::Constant) {
+        const double c2 = e2.Evaluate();
+        if (c2 >= 0) {
+          lhs = pow(e1, c2 + 1);
+        }
+        return lhs;
+      }
     }
   } else {
     if (rhs.get_kind() == ExpressionKind::Pow) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
       const Expression& e1{rhs_ptr->get_1st_expression()};
       if (e1.EqualTo(lhs)) {
-        // Simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
+        // Simplification: e1 * pow(e1, c2) => pow(e1, 1 + c2) if c2 >= 0.
         const Expression& e2{rhs_ptr->get_2nd_expression()};
-        lhs = pow(e1, 1 + e2);
-        return lhs;
+        if (e2.get_kind() == ExpressionKind::Constant) {
+          const double c2 = e2.Evaluate();
+          if (c2 >= 0) {
+            lhs = pow(e1, 1 + c2);
+            return lhs;
+          }
+        }
       }
     }
   }
@@ -392,15 +420,11 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // Simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (lhs.get_kind() == ExpressionKind::Mul) {
+    //    (e_1 * ... * e_n) * rhs
     mul_factory = static_pointer_cast<ExpressionMul>(lhs.ptr_);
-    if (rhs.get_kind() == ExpressionKind::Mul) {
-      //    (e_1 * ... * e_n) * (e_{n+1} * ... * e_{m})
-      // => (e_1 * ... * e_n * e_{n*1} * ... * e_{m})
-      mul_factory.Add(static_pointer_cast<ExpressionMul>(rhs.ptr_));
-    } else {
-      // (e_1 * ... * e_n) * e_{n*1} -> (e_1 * ... * e_n * e_{n*1})
-      mul_factory.AddExpression(rhs);
-    }
+    // AddExpression method takes care of the case where rhs is another
+    // multiplication.
+    mul_factory.AddExpression(rhs);
   } else {
     if (rhs.get_kind() == ExpressionKind::Mul) {
       // e_1 * (e_2 * ... * e_n) -> (e_2 * ... * e_n * e_1)
@@ -468,15 +492,13 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
     lhs = Expression{v1 / v2};
     return lhs;
   }
-  // Simplification: E / E => 1
-  if (lhs.EqualTo(rhs)) {
-    lhs = Expression::One();
-    return lhs;
-  }
+  // Note: We disallow the simplification "E / E => 1" because E can be
+  // evaluated to zero.
   lhs.ptr_ = make_shared<ExpressionDiv>(lhs, rhs);
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const double rhs) {
   lhs /= Expression{rhs};
   return lhs;
@@ -520,6 +542,10 @@ bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
   const UnaryExpressionCell& unary_e{
       static_cast<const UnaryExpressionCell&>(e)};
   return e_.Less(unary_e.e_);
+}
+
+bool UnaryExpressionCell::PossibleDivisionByZero() const {
+  return e_.PossibleDivisionByZero();
 }
 
 double UnaryExpressionCell::Evaluate(const Environment& env) const {
@@ -571,6 +597,10 @@ bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
   return e2_.Less(binary_e.e2_);
 }
 
+bool BinaryExpressionCell::PossibleDivisionByZero() const {
+  return e1_.PossibleDivisionByZero() || e2_.PossibleDivisionByZero();
+}
+
 double BinaryExpressionCell::Evaluate(const Environment& env) const {
   const double v1{e1_.Evaluate(env)};
   const double v2{e2_.Evaluate(env)};
@@ -602,6 +632,8 @@ bool ExpressionVar::Less(const ExpressionCell& e) const {
   // which is based on variable IDs.
   return var_ < static_cast<const ExpressionVar&>(e).var_;
 }
+
+bool ExpressionVar::PossibleDivisionByZero() const { return false; }
 
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
@@ -648,6 +680,8 @@ bool ExpressionConstant::Less(const ExpressionCell& e) const {
   }
   return v_ < static_cast<const ExpressionConstant&>(e).v_;
 }
+
+bool ExpressionConstant::PossibleDivisionByZero() const { return false; }
 
 double ExpressionConstant::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(!std::isnan(v_));
@@ -747,6 +781,13 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
       });
 }
 
+bool ExpressionAdd::PossibleDivisionByZero() const {
+  return any_of(term_to_coeff_map_.begin(), term_to_coeff_map_.end(),
+                [](const pair<Expression, double>& p) {
+                  return p.first.PossibleDivisionByZero();
+                });
+}
+
 double ExpressionAdd::Evaluate(const Environment& env) const {
   return accumulate(
       term_to_coeff_map_.begin(), term_to_coeff_map_.end(), constant_term_,
@@ -810,11 +851,16 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
     return AddConstant(v);
   }
+  if (e.get_kind() == ExpressionKind::Add) {
+    // Flattening by calling Add method.
+    const auto ptr(static_pointer_cast<ExpressionAdd>(e.ptr_));
+    return Add(ptr);
+  }
   if (e.get_kind() == ExpressionKind::Mul) {
     const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
     const double constant_factor{ptr->get_constant_factor()};
     if (constant_factor != 1.0) {
-      // Instead of adding (1.0 * (constant_factor * b1^t1 ... bn^tn)),
+      // Instead of adding (1.0, (constant_factor * b1^t1 ... bn^tn)),
       // add (constant_factor, 1.0 * b1^t1 ... bn^tn).
       return AddTerm(constant_factor,
                      ExpressionMulFactory(1.0, ptr->get_term_to_exp_map())
@@ -864,27 +910,29 @@ void ExpressionAddFactory::AddConstant(const double constant_term) {
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
   DRAKE_ASSERT(term.get_kind() != ExpressionKind::Constant);
 
-  // If (term, coeff) = (-E, coeff), add (E, -coeff) by recursive call.
+  // If (coeff, term) = (coeff, -E), add (-coeff, E) by recursive call.
   if (term.get_kind() == ExpressionKind::Neg) {
     return AddTerm(
         -coeff,
         static_pointer_cast<ExpressionNeg>(term.ptr_)->get_expression());
   }
+  DRAKE_ASSERT(term.get_kind() != ExpressionKind::Neg);
 
   const auto it(term_to_coeff_map_.find(term));
   if (it != term_to_coeff_map_.end()) {
     // Case1: term is already in the map
     double& this_coeff{it->second};
     this_coeff += coeff;
-    if (this_coeff == 0.0) {
-      // If the coefficient becomes zero, remove the entry.
+    if (this_coeff == 0.0 && !term.PossibleDivisionByZero()) {
+      // Case: 0.0 * term. Simplify this to 0.0 by removing this entry
+      // if term is divide-by-zero free. Otherwise, keep (0.0 * term).
       term_to_coeff_map_.erase(it);
+      return;
     }
-  } else {
-    // Case2: term is not found in term_to_coeff_map_.
-    // Add the entry (term, coeff).
-    term_to_coeff_map_.emplace(term, coeff);
   }
+  // Case2: term is not found in term_to_coeff_map_.
+  // Add the entry (term, coeff).
+  term_to_coeff_map_.emplace(term, coeff);
 }
 
 void ExpressionAddFactory::AddMap(
@@ -973,6 +1021,14 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
       });
 }
 
+bool ExpressionMul::PossibleDivisionByZero() const {
+  return any_of(term_to_exp_map_.begin(), term_to_exp_map_.end(),
+                [](const pair<Expression, Expression>& p) {
+                  return p.first.PossibleDivisionByZero() ||
+                         p.second.PossibleDivisionByZero();
+                });
+}
+
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
       term_to_exp_map_.begin(), term_to_exp_map_.end(), constant_factor_,
@@ -1026,9 +1082,9 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
     return AddConstant(v);
   }
   if (e.get_kind() == ExpressionKind::Mul) {
-    // (c * b^t) => c * (1.0 * b^t)
+    // Flattening by calling Add method.
     const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
-    Add(ptr);
+    return Add(ptr);
   }
   // Add e^1
   return AddTerm(e, Expression{1.0});
@@ -1070,36 +1126,66 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
   // Example: (4 * x^2) * (3^2) => (4 * (3^2)) * x^2
   if (base.get_kind() == ExpressionKind::Constant &&
       exponent.get_kind() == ExpressionKind::Constant) {
-    constant_factor_ *= pow(base, exponent).Evaluate();
+    constant_factor_ *= std::pow(base.Evaluate(), exponent.Evaluate());
     return;
   }
   const auto it(term_to_exp_map_.find(base));
   if (it != term_to_exp_map_.end()) {
-    // base is already in map.
-    // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
-    // Update it to be (... * (base^(this_exponent + exponent)) * ...)
-    // Example: x^3 * x^2 => x^5
     Expression& this_exponent{it->second};
+    // base is already in map (= ... * (base^this_exponent) * ... ) and we're
+    // multiply it by "base^exponent". We want to simplify the following
+    //
+    //    base^this_exponent * base^exponent
+    //
+    // into "base^(this_exponent + exponent)". But we need to be careful because
+    //
+    //   1) base can be evaluated to zero.
+    //   2) Either this_exponent or exponent can be evaluated to a negative
+    //      value.
+    //
+    // 1) + 2) means that we can have a divide-by-zero exception while the
+    // simplified term "base^(this_exponent + exponent)" can be free from the
+    // exception.
+    //
+    // To be conservative, we only perform the simplification if
+    //
+    //   1) Both of this_exponent and exponent are constants.
+    //   2) Either both of them are non-negative or both of them are
+    //   non-positive.
+    //      (i.e. (this_exponent =  3 and exponent =  2) or
+    //            (this_exponent = -3 and exponent = -2)).
+    //
+    // Here is an example of the excluded case by 2), (x^5 * x^(-2)) = (x^5 /
+    // x^2). When x = 0, this expression is not well-defined. While a
+    // wrongly-simplified one x^3 is evaluated to zero when x = 0.
+    //
+    // TODO(soonhok): It turns out that the current representation for
+    // multiplication expressions, std::map<Expression, Expression>, is not good
+    // enough since we need to allow a multiplication of two power terms with a
+    // common base, for example, x^y * x^z. It seems that we need to have
+    // something like std::map<Expression, std::set<Expression>>. For the
+    // example of x^y * x^z, we will have map[x] = {y, z}.
+    //
     this_exponent += exponent;
     if (this_exponent.EqualTo(Expression::Zero())) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       term_to_exp_map_.erase(it);
-    }
-  } else {
-    // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
-    if (base.get_kind() == ExpressionKind::Pow) {
-      // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
-      // exponent)
-      // Example: (x^2)^3 => x^(2 * 3)
-      const Expression& e1{
-          static_pointer_cast<ExpressionPow>(base.ptr_)->get_1st_expression()};
-      const Expression& e2{
-          static_pointer_cast<ExpressionPow>(base.ptr_)->get_2nd_expression()};
-      term_to_exp_map_.emplace(e1, e2 * exponent);
-    } else {
-      term_to_exp_map_.emplace(base, exponent);
+      return;
     }
   }
+  // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
+  if (base.get_kind() == ExpressionKind::Pow) {
+    // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
+    // exponent)
+    // Example: (x^2)^3 => x^(2 * 3)
+    const Expression& e1{
+        static_pointer_cast<ExpressionPow>(base.ptr_)->get_1st_expression()};
+    const Expression& e2{
+        static_pointer_cast<ExpressionPow>(base.ptr_)->get_2nd_expression()};
+    term_to_exp_map_.emplace(e1, e2 * exponent);
+    return;
+  }
+  term_to_exp_map_.emplace(base, exponent);
 }
 
 void ExpressionMulFactory::AddMap(
@@ -1111,6 +1197,11 @@ void ExpressionMulFactory::AddMap(
 
 ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2} {}
+
+bool ExpressionDiv::PossibleDivisionByZero() const {
+  const Expression& denominator = get_2nd_expression();
+  return denominator.GetVariables().size() > 0;
+}
 
 ostream& ExpressionDiv::Display(ostream& os) const {
   os << "(" << get_1st_expression() << " / " << get_2nd_expression() << ")";
@@ -1429,32 +1520,23 @@ Expression sqrt(const Expression& e) {
 }
 
 Expression pow(const Expression& e1, const Expression& e2) {
-  // Simplification
   if (e2.get_kind() == ExpressionKind::Constant) {
     const double v2{
         static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value()};
     if (e1.get_kind() == ExpressionKind::Constant) {
-      // Constant folding
+      // Simplification: constant folding.
       const double v1{
           static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value()};
       ExpressionPow::check_domain(v1, v2);
       return Expression{std::pow(v1, v2)};
     }
-    if (v2 == 2.0 && e1.get_kind() == ExpressionKind::Sqrt) {
-      // pow(sqrt(x), 2) => x
-      return static_pointer_cast<ExpressionSqrt>(e1.ptr_)->get_expression();
-    }
-    // pow(x, 0) => 1
-    if (v2 == 0.0) {
-      return Expression::One();
-    }
-    // pow(x, 1) => x
+    // Simplification: pow(x, 1) => x
     if (v2 == 1.0) {
       return e1;
     }
   }
   if (e1.get_kind() == ExpressionKind::Pow) {
-    // pow(base, exponent) ^ e2 => pow(base, exponent * e2)
+    // Simplification: pow(base, exponent) ^ e2 => pow(base, exponent * e2)
     const Expression& base{
         static_pointer_cast<ExpressionPow>(e1.ptr_)->get_1st_expression()};
     const Expression& exponent{

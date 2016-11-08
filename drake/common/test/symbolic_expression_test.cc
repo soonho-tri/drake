@@ -299,6 +299,13 @@ TEST_F(SymbolicExpressionTest, LessMax) {
   CheckOrdering({max1, max2, max3});
 }
 
+TEST_F(SymbolicExpressionTest, PossibleDivisionByZero) {
+  EXPECT_FALSE(c1_.PossibleDivisionByZero());
+  EXPECT_FALSE(x_.PossibleDivisionByZero());
+  EXPECT_FALSE((x_ / 3.0).PossibleDivisionByZero());
+  EXPECT_TRUE((x_ / y_).PossibleDivisionByZero());
+}
+
 TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x_.to_string(), var_x_.get_name());
   EXPECT_EQ(y_.to_string(), var_y_.get_name());
@@ -756,8 +763,6 @@ TEST_F(SymbolicExpressionTest, Pow1) {
   EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::Zero()), Expression::One());
   // pow(x, 1.0) => x
   EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
-  // sqrt(x) * sqrt(x) => pow(sqrt(x), 2) => x
-  EXPECT_PRED2(ExpEqual, (sqrt(x_plus_y_) * sqrt(x_plus_y_)), x_plus_y_);
   // (x^2)^3 => x^(2*3)
   EXPECT_PRED2(ExpEqual, pow(pow(x_, 2), 3), pow(x_, 2 * 3));
   // (x^y)^z => x^(y*z)
@@ -1266,6 +1271,10 @@ TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
                 (z_ / 2), (pi_ / 2);
   // clang-format on
   EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, blah) {
+  std::cerr << (x_ / x_).Evaluate({{var_x_, 0.0}, {var_y_, 0.0}});
 }
 }  // namespace
 }  // namespace symbolic

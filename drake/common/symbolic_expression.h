@@ -154,6 +154,11 @@ class DRAKE_EXPORT Expression {
       set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
 
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. This method checks if an expression includes a division and its
+   * denominator part includes a symbolic variable.  */
+  bool PossibleDivisionByZero() const;
+
   /** Evaluates under a given environment (by default, an empty environment). */
   double Evaluate(const Environment& env = Environment{}) const;
 
@@ -287,6 +292,10 @@ class ExpressionCell {
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
   /** Provides lexicographical ordering between expressions. */
   virtual bool Less(const ExpressionCell& c) const = 0;
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. This method checks if an expression includes a division and its
+   * denominator part includes a symbolic variable.  */
+  virtual bool PossibleDivisionByZero() const = 0;
   /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
   /** Outputs string representation of expression into output stream @p os. */
@@ -352,6 +361,9 @@ class UnaryExpressionCell : public ExpressionCell {
   bool EqualTo(const ExpressionCell& c) const override;
   /** Provides lexicographical ordering between expressions. */
   bool Less(const ExpressionCell& c) const override;
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. */
+  bool PossibleDivisionByZero() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Returns the nested expression. */
@@ -387,6 +399,9 @@ class BinaryExpressionCell : public ExpressionCell {
   bool EqualTo(const ExpressionCell& c) const override;
   /** Provides lexicographical ordering between expressions. */
   bool Less(const ExpressionCell& c) const override;
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. */
+  bool PossibleDivisionByZero() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Returns the first expression. */
@@ -425,6 +440,7 @@ class ExpressionVar : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
+  bool PossibleDivisionByZero() const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -440,6 +456,7 @@ class ExpressionConstant : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
+  bool PossibleDivisionByZero() const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -481,6 +498,9 @@ class ExpressionAdd : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   /** Checks ordering between this and @p e. */
   bool Less(const ExpressionCell& e) const override;
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. */
+  bool PossibleDivisionByZero() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
@@ -597,6 +617,9 @@ class ExpressionMul : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   /** Checks ordering between this and @p e. */
   bool Less(const ExpressionCell& e) const override;
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. */
+  bool PossibleDivisionByZero() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
@@ -684,6 +707,10 @@ class ExpressionMulFactory {
 class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
+  /** Checks if it is possible to have a divide-by-zero exception during
+   * evaluation. This method checks if an expression includes a division and its
+   * denominator part includes a symbolic variable.  */
+  bool PossibleDivisionByZero() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
