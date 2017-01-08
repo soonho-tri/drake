@@ -1077,6 +1077,15 @@ GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
   EXPECT_TRUE(std::is_nothrow_move_constructible<Expression>::value);
 }
 
+GTEST_TEST(ExpressionTest, numext_imag) {
+  using Dest = Eigen::Matrix<drake::symbolic::Expression, -1, -1, 0, -1, -1>;
+  typedef typename Dest::Scalar ResScalar;
+  typedef typename Dest::RealScalar RealScalar;
+  ResScalar actualAlpha;
+  const bool b{false || (Eigen::numext::imag(actualAlpha) == RealScalar(0))};
+  std::cerr << b << std::endl;
+}
+
 TEST_F(SymbolicExpressionTest, Log) {
   EXPECT_DOUBLE_EQ(log(pi_).Evaluate(), std::log(3.141592));
   EXPECT_DOUBLE_EQ(log(one_).Evaluate(), std::log(1.0));

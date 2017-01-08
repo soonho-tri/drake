@@ -65,6 +65,7 @@ class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
+class ExpressionImag;
 
 /** Represents a symbolic form of an expression.
 
@@ -150,6 +151,8 @@ class Expression {
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
+  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
+  Expression(const ExpressionImag& dummy) : Expression{} {}
   /** Constructs a variable expression from symbolic::Variable. */
   explicit Expression(const Variable& var);
   /** Returns expression kind. */
@@ -570,6 +573,26 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
+/** Provides a dummy class for the return type of Eigen::numext::imag(const
+ * Expression& e) function. In Eigen, we have code comparing the result of
+ * numext::imag(Expression) and Expression:
+ *
+ *     ... (!ComplexByReal) || (numext::imag(actualAlpha)==RealScalar(0));
+ *                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * Since operator== results in a symbolic::Formula, not a bool, the above code
+ * does not work if actualAlpha is of symbolic::Expression and RealScalar is
+ * symbolic::Expression.
+ *
+ * Our solution is to change the return type of numext::image(const
+ * symbolic::Expression) function to this dummy class,
+ * ExpressionImag.
+ */
+class ExpressionImag {
+ public:
+  /** Checks if rhs is zero or not. */
+  bool operator==(const Expression& rhs) const { return is_zero(rhs); }
+};
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -689,6 +712,14 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+
+namespace numext {
+EIGEN_DEVICE_FUNC
+inline drake::symbolic::ExpressionImag imag(
+    const drake::symbolic::Expression& e) {
+  return drake::symbolic::ExpressionImag{};
+}
+}  // namespace numext
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
