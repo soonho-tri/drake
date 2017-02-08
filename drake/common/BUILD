@@ -139,6 +139,7 @@ drake_cc_library(
         ":dummy_value",
         ":number_traits",
         ":polynomial",
+        "@gmp//:lib",
     ],
 )
 

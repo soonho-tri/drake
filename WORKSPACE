@@ -20,6 +20,14 @@ pkg_config_package(
 )
 
 github_archive(
+    name = "gmp",
+    repository = "soonho-tri/gmp",
+    commit = "31908c5651ca7951cb300cc784d0ce3366dd8e17",
+    sha256 = "0fc9d80533a28395cc187a54789459edf905971e941b967da334f317622e9183",
+    build_file = "tools/gmp.BUILD",
+)
+
+github_archive(
     name = "gtest",
     repository = "google/googletest",
     commit = "release-1.7.0",
