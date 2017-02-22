@@ -68,6 +68,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "requirement_monitor",
+    hdrs = [
+        "requirement_monitor.h",
+    ],
+    deps = [
+        "//drake/solvers:binding",
+        "//drake/solvers:constraint",
+        "//drake/solvers:decision_variable",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "integrator",
     srcs = ["integrator.cc"],
     hdrs = ["integrator.h"],
@@ -241,6 +254,18 @@ drake_cc_googletest(
     deps = [
         ":gain",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "requirement_monitor_test",
+    srcs = [
+        "test/requirement_monitor_test.cc",
+    ],
+    deps = [
+        ":requirement_monitor",
         "//drake/common:symbolic",
         "//drake/systems/framework",
     ],
