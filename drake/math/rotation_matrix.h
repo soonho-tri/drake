@@ -4,6 +4,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
@@ -26,34 +28,36 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
   typedef typename Derived::Scalar Scalar;
 
-  Vector4<Scalar> q;
-
   // Check if the trace is larger than any diagonal
-  Scalar tr = M.trace();
-  if (tr >= M(0, 0) && tr >= M(1, 1) && tr >= M(2, 2)) {
-    q(0) = 1 + tr;
-    q(1) = M(2, 1) - M(1, 2);
-    q(2) = M(0, 2) - M(2, 0);
-    q(3) = M(1, 0) - M(0, 1);
-  } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
-    q(0) = M(2, 1) - M(1, 2);
-    q(1) = Scalar(1) - (tr - 2 * M(0, 0));
-    q(2) = M(0, 1) + M(1, 0);
-    q(3) = M(0, 2) + M(2, 0);
-  } else if (M(1, 1) >= M(2, 2)) {
-    q(0) = M(0, 2) - M(2, 0);
-    q(1) = M(0, 1) + M(1, 0);
-    q(2) = Scalar(1) - (tr - 2 * M(1, 1));
-    q(3) = M(1, 2) + M(2, 1);
-  } else {
-    q(0) = M(1, 0) - M(0, 1);
-    q(1) = M(0, 2) + M(2, 0);
-    q(2) = M(1, 2) + M(2, 1);
-    q(3) = 1 - (tr - 2 * M(2, 2));
-  }
-  Scalar scale = q.norm();
-  q /= scale;
-  return q;
+  const Scalar tr{M.trace()};
+  // clang-format off
+  const Vector4<Scalar> q{
+    cond(
+      // Case 1
+      tr >= M(0, 0) && tr >= M(1, 1) && tr >= M(2, 2),
+      Vector4<Scalar>{1 + tr,
+                      M(2, 1) - M(1, 2),
+                      M(0, 2) - M(2, 0),
+                      M(1, 0) - M(0, 1)},
+      // Case 2
+      M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2),
+      Vector4<Scalar>{M(2, 1) - M(1, 2),
+                      Scalar{1} - (tr - 2 * M(0, 0)),
+                      M(0, 1) + M(1, 0),
+                      M(0, 2) + M(2, 0)},
+      // Case 3
+      M(1, 1) >= M(2, 2),
+      Vector4<Scalar>{M(0, 2) - M(2, 0),
+                      M(0, 1) + M(1, 0),
+                      Scalar{1} - (tr - 2 * M(1, 1)),
+                      M(1, 2) + M(2, 1)},
+      // Default Case
+      Vector4<Scalar>{M(1, 0) - M(0, 1),
+                      M(0, 2) + M(2, 0),
+                      M(1, 2) + M(2, 1),
+                      Scalar{1} - (tr - 2 * M(2, 2))})};
+  // clang-format on
+  return q.normailzed();
 }
 
 /**
@@ -105,7 +109,8 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   // the second angle covers PI.
   // Also delete Simbody's derived implementation
 
-  /*EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+  /*EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3,
+  3);
 
   auto euler_angles =
       Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
