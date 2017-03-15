@@ -47,6 +47,8 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+        "//drake/common:cond",
+        "//drake/common:symbolic",
     ],
 )
 

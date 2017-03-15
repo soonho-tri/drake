@@ -4,8 +4,11 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 
 namespace drake {
 namespace math {
@@ -19,9 +22,15 @@ namespace math {
  * @return a 4 x 1 unit length vector, the quaternion corresponding to the
  * rotation matrix.
  */
+//@{
+/**
+ * Non-symbolic version of rotmat2quat.
+ */
 template <typename Derived>
-Vector4<typename Derived::Scalar> rotmat2quat(
-    const Eigen::MatrixBase<Derived>& M) {
+Vector4<typename std::enable_if<
+    !std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+    typename Derived::Scalar>::type>
+rotmat2quat(const Eigen::MatrixBase<Derived>& M) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
   typedef typename Derived::Scalar Scalar;
@@ -55,6 +64,42 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   q /= scale;
   return q;
 }
+
+/**
+ * Symbolic version of rotmat2quat.
+ */
+template <typename Derived>
+Vector4<typename std::enable_if<
+    std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+    symbolic::Expression>::type>
+rotmat2quat(const Eigen::MatrixBase<Derived>& M) {
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+  const symbolic::Expression tr{M.trace()};
+  Vector4<symbolic::Expression> q;
+  const symbolic::Formula c1{tr >= M(0, 0) && tr >= M(1, 1) && tr >= M(2, 2)};
+  const symbolic::Formula c2{M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)};
+  const symbolic::Formula c3{M(1, 1) >= M(2, 2)};
+  // clang-format off
+  q(0) = cond(c1, 1 + tr,
+              c2, M(2, 1) - M(1, 2),
+              c3, M(0, 2) - M(2, 0),
+              M(1, 0) - M(0, 1));
+  q(1) = cond(c1, M(2, 1) - M(1, 2),
+              c2, 1 - (tr - 2 * M(0, 0)),
+              c3, M(0, 1) + M(1, 0),
+              M(0, 2) + M(2, 0));
+  q(2) = cond(c1, M(0, 2) - M(2, 0),
+              c2, M(0, 1) + M(1, 0),
+              c3, 1 - (tr - 2 * M(1, 1)),
+              M(1, 2) + M(2, 1));
+  q(3) = cond(c1, M(1, 0) - M(0, 1),
+              c2, M(0, 2) + M(2, 0),
+              c3, M(1, 2) + M(2, 1),
+              1 - (tr - 2 * M(2, 2)));
+  // clang-format on
+  return q.normalized();
+}
+//@}
 
 /**
  * Computes the angle axis representation from a rotation matrix.

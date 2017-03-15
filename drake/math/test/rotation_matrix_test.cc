@@ -76,6 +76,25 @@ GTEST_TEST(RotationMatrixTest, TestProjection) {
   EXPECT_NEAR(std::abs(R2.determinant()), 1.0, tol);
 }
 
+GTEST_TEST(RotationMatrixTest, CheckCorrectnessOfRotmat2quat) {
+  Eigen::Matrix<double, 3, 3> m1;
+  m1 << 1, 2, -3, 4, 5, -6, 7, 8, 9;
+  Eigen::Matrix<double, 3, 3> m2;
+  m2 << 2, 3, 4, 5, 6, -7, 8, 9, 1;
+  Eigen::Matrix<double, 3, 3> m3;
+  m3 << -3, 4, 5, 6, -7, 8, 9, 1, 2;
+  Eigen::Matrix<double, 3, 3> m4;
+  m4 << -4, 5, 6, 7, -8, 9, 1, 2, -3;
+  Eigen::Matrix<double, 3, 3> m5;
+  m5 << 7, -3, 5, -4, 6, -1, 8, -9, 2;
+
+  for (const auto& m : {m1, m2, m3, m4, m5}) {
+    const Eigen::Matrix<symbolic::Expression, 3, 3> sym_m{
+        m.cast<symbolic::Expression>()};
+    EXPECT_EQ(rotmat2quat(m), rotmat2quat(sym_m));
+  }
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
