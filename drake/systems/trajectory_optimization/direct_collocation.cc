@@ -125,6 +125,24 @@ void DircolTrajectoryOptimization::AddRunningCost(
   AddCost(0.5 * SubstitutePlaceholderVariables(g, N() - 1));
 }
 
+void DircolTrajectoryOptimization::AddRunningCost(
+    const std::function<symbolic::Expression(
+        const symbolic::Expression& time,
+        const solvers::VectorXDecisionVariable& state,
+        const solvers::VectorXDecisionVariable& input)>& f) {
+  // cost_at_n(i) is the cost function at i-th interval.
+  const auto cost_at_n = [&](const int n) {
+    return f(h_vars().head(n).cast<symbolic::Expression>().sum(),
+             x_vars().segment(n * num_states(), num_states()),
+             u_vars().segment(n * num_inputs(), num_inputs()));
+  };
+  AddCost(0.5 * cost_at_n(0));
+  for (int i = 1; i < N() - 2; ++i) {
+    AddCost(cost_at_n(i));
+  }
+  AddCost(0.5 * cost_at_n(N() - 1));
+}
+
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
 void DircolTrajectoryOptimization::AddRunningCost(

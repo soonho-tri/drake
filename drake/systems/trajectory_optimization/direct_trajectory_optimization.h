@@ -115,6 +115,12 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// derived class implementation.
   virtual void AddRunningCost(const symbolic::Expression& g) = 0;
 
+  virtual void AddRunningCost(
+      const std::function<symbolic::Expression(
+          const symbolic::Expression& time,
+          const solvers::VectorXDecisionVariable& state,
+          const solvers::VectorXDecisionVariable& input)>& f) = 0;
+
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
   /// Note: Derived classes will need to type

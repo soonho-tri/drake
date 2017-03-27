@@ -35,7 +35,12 @@ void AddSwingUpTrajectoryParams(const Eigen::Vector2d& x0,
 
   const double R = 10;  // Cost on input "effort".
   auto u = dircol->input();
-  dircol->AddRunningCost((R * u) * u);
+  // dircol->AddRunningCost((R * u) * u);
+  dircol->AddRunningCost([&R](const symbolic::Expression& time,
+                              const solvers::VectorXDecisionVariable& state,
+                              const solvers::VectorXDecisionVariable& input) {
+    return (R * input * input)(0);
+  });
 }
 
 }  // namespace pendulum

@@ -51,6 +51,12 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   void AddRunningCost(const symbolic::Expression& e) override;
 
+  void AddRunningCost(
+      const std::function<symbolic::Expression(
+          const symbolic::Expression& time,
+          const solvers::VectorXDecisionVariable& state,
+          const solvers::VectorXDecisionVariable& input)>& f) override;
+
   void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
   using DirectTrajectoryOptimization::AddRunningCost;
   using DirectTrajectoryOptimization::AddFinalCost;
