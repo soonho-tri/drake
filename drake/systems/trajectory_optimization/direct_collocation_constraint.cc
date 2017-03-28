@@ -86,9 +86,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_value_ =
-      new FreestandingInputPortValue(std::make_unique<BasicVector<AutoDiffXd>>(
-          system_->get_input_port(0).size()));
+  input_port_value_ = new FreestandingInputPortValue(system_->AllocateInputVector(system_->get_input_port(0)));
   std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
   context_->SetInputPortValue(0, std::move(input_port_value));
 }
