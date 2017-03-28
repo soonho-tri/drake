@@ -37,6 +37,16 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
     &plant, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
     kTrajectoryTimeUpperBound);
 
+  // Input limits (note that the steering limit imposed by SimpleCar is larger).
+  DrivingCommand<double> lower_limit, upper_limit;
+  lower_limit.set_steering_angle(-M_PI_2);
+  lower_limit.set_throttle(0.0);
+  lower_limit.set_brake(0.0);
+  upper_limit.set_steering_angle(M_PI_2);
+  upper_limit.set_throttle(std::numeric_limits<double>::infinity());
+  upper_limit.set_brake(std::numeric_limits<double>::infinity());
+  prog.AddInputBounds(lower_limit.get_value(),upper_limit.get_value());
+
   // Fix initial conditions.
   prog.AddLinearConstraint( prog.initial_state().array() == x0.get_value().array() );
 
@@ -46,10 +56,13 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   // Cost function: int_0^T [ x'x + u'u ] dt
   prog.AddRunningCost( prog.state().transpose()*prog.state() + prog.input().transpose()*prog.input() );
 
+  auto initial_input_trajectory =
+      PiecewisePolynomial<double>(lower_limit.get_value());
   auto initial_state_trajectory =
     PiecewisePolynomial<double>::FirstOrderHold({0, initial_duration}, {x0.get_value(), xf.get_value()});
+
   solvers::SolutionResult result = prog.SolveTraj(
-    initial_duration, PiecewisePolynomial<double>(), initial_state_trajectory);
+    initial_duration, initial_input_trajectory, initial_state_trajectory);
 
   EXPECT_EQ(result,solvers::SolutionResult::kSolutionFound);
 
