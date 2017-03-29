@@ -53,8 +53,8 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   // Fix final conditions.
   prog.AddLinearConstraint( prog.final_state().array() == xf.get_value().array() );
 
-  // Cost function: int_0^T [ x'x + u'u ] dt
-  prog.AddRunningCost( prog.state().transpose()*prog.state() + prog.input().transpose()*prog.input() );
+  // Cost function: int_0^T [ u'u ] dt
+  prog.AddRunningCost( prog.input().transpose()*prog.input() );
 
   auto initial_input_trajectory =
       PiecewisePolynomial<double>(lower_limit.get_value());
@@ -62,7 +62,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
     PiecewisePolynomial<double>::FirstOrderHold({0, initial_duration}, {x0.get_value(), xf.get_value()});
 
   solvers::SolutionResult result = prog.SolveTraj(
-    initial_duration, initial_input_trajectory, initial_state_trajectory);
+						  initial_duration, PiecewisePolynomial<double>(), initial_state_trajectory);
 
   EXPECT_EQ(result,solvers::SolutionResult::kSolutionFound);
 
