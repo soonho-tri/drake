@@ -56,8 +56,6 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   // Cost function: int_0^T [ u'u ] dt
   prog.AddRunningCost( prog.input().transpose()*prog.input() );
 
-  auto initial_input_trajectory =
-      PiecewisePolynomial<double>(lower_limit.get_value());
   auto initial_state_trajectory =
     PiecewisePolynomial<double>::FirstOrderHold({0, initial_duration}, {x0.get_value(), xf.get_value()});
 
