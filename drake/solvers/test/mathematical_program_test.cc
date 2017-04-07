@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -49,12 +50,14 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 
 using std::all_of;
+using std::cerr;
 using std::cref;
 using std::enable_if;
 using std::endl;
 using std::is_permutation;
 using std::is_same;
 using std::make_shared;
+using std::make_tuple;
 using std::map;
 using std::move;
 using std::numeric_limits;
@@ -64,6 +67,7 @@ using std::set;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
+using std::tuple;
 using std::unique_ptr;
 using std::vector;
 
@@ -389,6 +393,58 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint4->upper_bound(), constraint5->upper_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
+}
+
+GTEST_TEST(testMathematicalProgram, SymbolicBoundingBox1) {
+  // Test problem: Ax - b <= 0 where
+  //
+  // A = |-3.0  0.0  0.0|  x = |x0|  b = | 9.0|
+  //     | 0.0  7.0  0.0|      |x1|      |14.0|
+  //     | 0.0  0.0  2.0|      |x2|      |-2.0|
+  //
+  // We have the following constraints:
+  //           -3 * x0 -  9.0 <= 0.0
+  //            7 * x1 - 14.0 <= 0.0
+  //            2 * x2 +  2.0 <= 0.0
+  // which is equivalent to the following bounding-box constraints.
+  //
+  //         3.0 <= x0 <=  ∞
+  //          -∞ <= x1 <=  2.0
+  //          -∞ <= x2 <= -1.0
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Eigen::Matrix3d A;
+  Vector3d b;
+  // clang-format off
+  A << -3.0, 0.0, 0.0,
+        0.0, 7.0, 0.0,
+        0.0, 0.0, 2.0;
+  b <<  9.0,
+       14.0,
+       -2.0;
+  // clang-format on
+  const Formula f{A * x - b <= Vector3d::Zero()};
+  const Binding<BoundingBoxConstraint> binding{
+      prog.AddBoundingBoxConstraint(f)};
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
+
+  // // Checks if AddBoundingBoxConstraint added the constraint correctly.
+  const Eigen::Matrix<Expression, 3, 1> vars{binding.constraint()->A() *
+                                             binding.variables()};
+  const Vector3d lb{binding.constraint()->lower_bound()};
+  const Vector3d ub{binding.constraint()->upper_bound()};
+
+  set<tuple<double, Expression, double>> expected_result;
+  expected_result.emplace(3.0, x(0), numeric_limits<double>::infinity());
+  expected_result.emplace(-numeric_limits<double>::infinity(), x(1), 2.0);
+  expected_result.emplace(-numeric_limits<double>::infinity(), x(2), -1.0);
+
+  set<tuple<double, Expression, double>> result;
+  for (int i = 0; i < 3; ++i) {
+    result.emplace(lb(i), vars(i), ub(i));
+  }
+
+  EXPECT_EQ(result, expected_result);
 }
 
 // A generic cost derived from Constraint class. This is meant for testing

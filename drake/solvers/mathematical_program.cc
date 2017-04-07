@@ -1145,79 +1145,88 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
   throw runtime_error(oss.str());
 }
 
+void DecomposeBoundingBoxVariable(const Expression& e, double* lb, double* ub,
+                                  Variable* var) {
+  // e = v
+  DRAKE_ASSERT(is_variable(e));
+  *var = get_variable(e);
+  return;
+}
+void DecomposeBoundingBoxMultiplication(const Expression& e, double* lb,
+                                        double* ub, Variable* var) {
+  DRAKE_ASSERT(is_multiplication(e));
+  // e = c * base^expt
+  //   = c * v
+  const double c{get_constant_in_multiplication(e)};
+  const map<Expression, Expression>& base_to_exponent{
+      get_base_to_exponent_map_in_multiplication(e)};
+  if (base_to_exponent.size() != 1) {
+    throw runtime_error("case: e = c * pow(b₁, expt₁) * ... * pow(bₙ, exptₙ).");
+  }
+  const Expression& base{base_to_exponent.begin()->first};
+  if (!is_variable(base)) {
+    throw runtime_error(
+        "case: e = c * pow(b₁, expt₁) and b₁ is not a variable.");
+  }
+  const Variable& v{get_variable(base)};
+  const Expression& expt{base_to_exponent.begin()->second};
+  if (!is_constant(expt)) {
+    throw runtime_error(
+        "case: e = c * pow(b₁, expt₁) and expt₁ is not a constant.");
+  }
+  if (get_constant_value(expt) != 1.0) {
+    throw runtime_error("case: e = c * pow(b₁, expt₁) and expt₁ is not 1.");
+  }
+  // Finally, we have e = c * v.
+  *var = v;
+  if (c > 0) {
+    *lb /= c;
+    *ub /= c;
+  } else {
+    const double old_lb{*lb};
+    *lb = *ub / c;
+    *ub = old_lb / c;
+  }
+}
+
+void DecomposeBoundingBoxAddition(const Expression& e, double* lb, double* ub,
+                                  Variable* var) {
+  DRAKE_ASSERT(is_addition(e));
+  // e = c₀ + c₁ * e₁
+  //   = c₀ + c₁ * v₁
+  const double c0{get_constant_in_addition(e)};
+  const map<Expression, double>& expr_to_coeff{
+      get_expr_to_coeff_map_in_addition(e)};
+  if (expr_to_coeff.size() != 1) {
+    throw runtime_error("case: e = c₀ + c₁ * e₁ + ... + cₙ * eₙ");
+  }
+  const double c1{expr_to_coeff.begin()->second};
+  const Expression& e1{expr_to_coeff.begin()->first};
+  if (!is_variable(e1)) {
+    throw runtime_error("case: e = c₀ + c₁ * e₁ where e₁ is not a variable.");
+  }
+  const Variable& v1{get_variable(e1)};
+  //     lb <= c₀ + c₁ * v₁ <= ub
+  // ->  lb - c₀ <= c₁ * v₁ <= ub - c₀
+  *lb = *lb - c0;
+  *ub = *ub - c0;
+  return DecomposeBoundingBoxMultiplication(c1 * v1, lb, ub, var);
+}
+
 // Input : lb <= e <= ub
 // Update : lb' <= var <= ub'
 void DecomposeBoundingBox(const Expression& e, double* lb, double* ub,
                           Variable* var) {
   if (is_variable(e)) {
-    // e = v
-    *var = get_variable(e);
-    return;
+    return DecomposeBoundingBoxVariable(e, lb, ub, var);
   }
   if (is_multiplication(e)) {
-    // e = c * base^expt
-    //   = c * v
-    const double c{get_constant_in_multiplication(e)};
-    const map<Expression, Expression>& base_to_exponent{
-        get_base_to_exponent_map_in_multiplication(e)};
-    if (base_to_exponent.size() != 1) {
-      throw runtime_error(
-          "case: e = c * pow(b₁, expt₁) * ... * pow(bₙ, exptₙ).");
-    }
-    const Expression& base{base_to_exponent.begin()->first};
-    if (!is_variable(base)) {
-      throw runtime_error(
-          "case: e = c * pow(b₁, expt₁) and b₁ is not a variable.");
-    }
-    const Variable& v{get_variable(base)};
-    const Expression& expt{base_to_exponent.begin()->second};
-    if (!is_constant(expt)) {
-      throw runtime_error(
-          "case: e = c * pow(b₁, expt₁) and expt₁ is not a constant.");
-    }
-    if (get_constant_value(expt) != 1.0) {
-      throw runtime_error("case: e = c * pow(b₁, expt₁) and expt₁ is not 1.");
-    }
-    // Finally, we have e = c * v.
-    *var = v;
-    if (c > 0) {
-      *lb /= c;
-      *ub /= c;
-    } else {
-      const double old_lb{*lb};
-      *lb = *ub / c;
-      *ub = old_lb / c;
-    }
+    return DecomposeBoundingBoxMultiplication(e, lb, ub, var);
   }
   if (is_addition(e)) {
-    // e = c₀ + c₁ * e₁
-    //   = c₀ + c₁ * v₁
-    const double c0{get_constant_in_addition(e)};
-    const map<Expression, double>& expr_to_coeff{
-        get_expr_to_coeff_map_in_addition(e)};
-    if (expr_to_coeff.size() != 1) {
-      throw runtime_error("case: e = c₀ + c₁ * e₁ + ... + cₙ * eₙ");
-    }
-    const double c1{expr_to_coeff.begin()->second};
-    const Expression& e1{expr_to_coeff.begin()->first};
-    if (!is_variable(e1)) {
-      throw runtime_error("case: e = c₀ + c₁ * e₁ where e₁ is not a variable.");
-    }
-    const Variable& v1{get_variable(e1)};
-    //     lb <= c₀ + c₁ * v₁ <= ub
-    // ->  lb - c₀ <= c₁ * v₁ <= ub - c₀
-    // ->  (lb - c₀) / c₁ <= v1 <= (ub - c₀) / c₁   if c₁ > 0
-    // ->  (ub - c₀) / c₁ <= v1 <= (lb - c₀) / c₁   if c₁ < 0
-    if (c1 > 0.0) {
-      *lb = (*lb - c0) / c1;
-      *ub = (*ub - c0) / c1;
-    } else {
-      const double old_lb{*lb};
-      *lb = (*ub - c0) / c1;
-      *ub = (old_lb - c0) / c1;
-    }
-    *var = v1;
+    return DecomposeBoundingBoxAddition(e, lb, ub, var);
   }
+  throw runtime_error("case: e is not a variable, multiplication, addition.");
 }
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
