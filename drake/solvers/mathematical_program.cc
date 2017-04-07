@@ -1106,6 +1106,157 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
   return AddConstraint(Binding<BoundingBoxConstraint>(constraint, vars));
 }
 
+Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+    const Formula& f) {
+  if (is_less_than_or_equal_to(f) || is_greater_than_or_equal_to(f)) {
+    return AddBoundingBoxConstraint({f});
+  } else if (is_conjunction(f)) {
+    return AddBoundingBoxConstraint(get_operands(f));
+  }
+  //   // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
+  //   const Expression& e1{get_lhs_expression(f)};
+  //   const Expression& e2{get_rhs_expression(f)};
+  //   const Expression e2_minus_e1{e2 - e1};
+  //   if (is_variable(e2_minus_e1)) {
+  //     // 0 <= v <= ∞
+  //     const Variable& v{get_variable(e2_minus_e1)};
+  //     return AddBoundingBoxConstraint(0.0,
+  //     numeric_limits<double>::infinity(),
+  //                                     v);
+  //   } else if (is_multiplication(e2_minus_e1)) {
+  //     //      0 <= c * v <= ∞
+  //     // ->   0 <=     v <= ∞  if c > 0
+  //     // ->  -∞ <=     v <= 0  if c < 0
+  //   }
+  // } else if (is_greater_than_or_equal_to(f)) {
+  //   // // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
+  //   // const Expression& e1{get_lhs_expression(f)};
+  //   // const Expression& e2{get_rhs_expression(f)};
+  //   // return AddLinearConstraint(e1 - e2, 0.0,
+  //   // numeric_limits<double>::infinity());
+  // } else if (is_conjunction(f)) {
+  //   return AddBoundingBoxConstraint(get_operands(f));
+  // }
+  ostringstream oss;
+  oss << "MathematicalProgram::AddBoundingBoxConstraint is called with a "
+      << "formula " << f
+      << " which is neither a relational formula using one of {<=, >=} "
+         "operators nor a conjunction of those relational formulas.";
+  throw runtime_error(oss.str());
+}
+
+// Input : lb <= e <= ub
+// Update : lb' <= var <= ub'
+void DecomposeBoundingBox(const Expression& e, double* lb, double* ub,
+                          Variable* var) {
+  if (is_variable(e)) {
+    // e = v
+    *var = get_variable(e);
+    return;
+  }
+  if (is_multiplication(e)) {
+    // e = c * base^expt
+    //   = c * v
+    const double c{get_constant_in_multiplication(e)};
+    const map<Expression, Expression>& base_to_exponent{
+        get_base_to_exponent_map_in_multiplication(e)};
+    if (base_to_exponent.size() != 1) {
+      throw runtime_error(
+          "case: e = c * pow(b₁, expt₁) * ... * pow(bₙ, exptₙ).");
+    }
+    const Expression& base{base_to_exponent.begin()->first};
+    if (!is_variable(base)) {
+      throw runtime_error(
+          "case: e = c * pow(b₁, expt₁) and b₁ is not a variable.");
+    }
+    const Variable& v{get_variable(base)};
+    const Expression& expt{base_to_exponent.begin()->second};
+    if (!is_constant(expt)) {
+      throw runtime_error(
+          "case: e = c * pow(b₁, expt₁) and expt₁ is not a constant.");
+    }
+    if (get_constant_value(expt) != 1.0) {
+      throw runtime_error("case: e = c * pow(b₁, expt₁) and expt₁ is not 1.");
+    }
+    // Finally, we have e = c * v.
+    *var = v;
+    if (c > 0) {
+      *lb /= c;
+      *ub /= c;
+    } else {
+      const double old_lb{*lb};
+      *lb = *ub / c;
+      *ub = old_lb / c;
+    }
+  }
+  if (is_addition(e)) {
+    // e = c₀ + c₁ * e₁
+    //   = c₀ + c₁ * v₁
+    const double c0{get_constant_in_addition(e)};
+    const map<Expression, double>& expr_to_coeff{
+        get_expr_to_coeff_map_in_addition(e)};
+    if (expr_to_coeff.size() != 1) {
+      throw runtime_error("case: e = c₀ + c₁ * e₁ + ... + cₙ * eₙ");
+    }
+    const double c1{expr_to_coeff.begin()->second};
+    const Expression& e1{expr_to_coeff.begin()->first};
+    if (!is_variable(e1)) {
+      throw runtime_error("case: e = c₀ + c₁ * e₁ where e₁ is not a variable.");
+    }
+    const Variable& v1{get_variable(e1)};
+    //     lb <= c₀ + c₁ * v₁ <= ub
+    // ->  lb - c₀ <= c₁ * v₁ <= ub - c₀
+    // ->  (lb - c₀) / c₁ <= v1 <= (ub - c₀) / c₁   if c₁ > 0
+    // ->  (ub - c₀) / c₁ <= v1 <= (lb - c₀) / c₁   if c₁ < 0
+    if (c1 > 0.0) {
+      *lb = (*lb - c0) / c1;
+      *ub = (*ub - c0) / c1;
+    } else {
+      const double old_lb{*lb};
+      *lb = (*ub - c0) / c1;
+      *ub = (old_lb - c0) / c1;
+    }
+    *var = v1;
+  }
+}
+
+Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+    const set<Formula>& formulas) {
+  // Decomposes a set of formulas into a decision variable vector, `vars`, and
+  // two 1D-vector of double `lb` and `ub`.
+  const auto n = formulas.size();
+  VectorXDecisionVariable vars{n};
+  Eigen::VectorXd lb{Eigen::VectorXd::Constant(n, 0.0)};
+  Eigen::VectorXd ub{
+      Eigen::VectorXd::Constant(n, numeric_limits<double>::infinity())};
+
+  int i{0};  // index variable used in the loop
+  for (const Formula& f : formulas) {
+    if (is_less_than_or_equal_to(f)) {
+      // f := (lhs <= rhs)
+      //      (0 <= rhs - lhs <= ∞)
+      DecomposeBoundingBox(get_rhs_expression(f) - get_lhs_expression(f),
+                           &lb(i), &ub(i), &vars(i));
+    } else if (is_greater_than_or_equal_to(f)) {
+      // f := (lhs >= rhs)
+      //      (0 <= lhs - rhs <= ∞)
+      DecomposeBoundingBox(get_lhs_expression(f) - get_rhs_expression(f),
+                           &lb(i), &ub(i), &vars(i));
+    } else {
+      ostringstream oss;
+      oss << "MathematicalProgram::AddBoundingBoxConstraint(const "
+          << "set<Formula>& formulas) is called while its argument "
+             "'formulas' "
+          << "includes a formula " << f
+          << " which is not a relational formula using one of {<=, >=} "
+             "operators.";
+      throw runtime_error(oss.str());
+    }
+    ++i;
+  }
+  return AddBoundingBoxConstraint(lb, ub, vars);
+}
+
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
   required_capabilities_ |= kLinearComplementarityConstraint;
