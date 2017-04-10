@@ -7,6 +7,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/symbolic_formula.h"
 
 namespace drake {
 namespace systems {
@@ -46,6 +47,7 @@ void Simulator<T>::ResetStatistics() {
 }
 
 template class Simulator<double>;
+template class Simulator<symbolic::Expression>;
 template class Simulator<AutoDiffXd>;
 
 }  // namespace systems

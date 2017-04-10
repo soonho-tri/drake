@@ -83,7 +83,7 @@ class LeafSystem : public System<T> {
     detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
     // -- The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
-             context->get_state().get_discrete_state()->get_data()) {
+         context->get_state().get_discrete_state()->get_data()) {
       detail::CheckBasicVectorInvariants(group);
     }
     // -- The numeric parameters must all be valid BasicVectors.
@@ -259,11 +259,11 @@ class LeafSystem : public System<T> {
     if (model_result) {
       return model_result.release();
     }
-    DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports should "
-                    "pass a model_value to DeclareAbstractInputPort, or else "
-                    "must override DoAllocateInputAbstract");
+    DRAKE_ABORT_MSG(
+        "A concrete leaf system with abstract input ports should "
+        "pass a model_value to DeclareAbstractInputPort, or else "
+        "must override DoAllocateInputAbstract");
   }
-
 
   /// Emits a graphviz fragment for this System. Leaf systems are visualized as
   /// records. For instance, a leaf system with 2 inputs and 1 output is:
@@ -280,7 +280,7 @@ class LeafSystem : public System<T> {
   /// |       | y0 |    |
   /// +-------+----+----+
   /// @endverbatim
-  void GetGraphvizFragment(std::stringstream *dot) const override {
+  void GetGraphvizFragment(std::stringstream* dot) const override {
     // Use the this pointer as a unique ID for the node in the dotfile.
     const int64_t id = this->GetGraphvizId();
     std::string name = this->get_name();
@@ -315,14 +315,14 @@ class LeafSystem : public System<T> {
     *dot << "}\"];" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                 std::stringstream *dot) const final {
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
-                                  std::stringstream *dot) const final {
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                  std::stringstream* dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":y" << port.get_index();
   }
@@ -411,8 +411,9 @@ class LeafSystem : public System<T> {
     if (model_result) {
       return model_result;
     }
-    DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
-                    "override AllocateOutputAbstract.");
+    DRAKE_ABORT_MSG(
+        "A concrete leaf system with abstract output ports must "
+        "override AllocateOutputAbstract.");
   }
 
   /// Returns true if there is direct-feedthrough from the given @p input_port
@@ -440,8 +441,7 @@ class LeafSystem : public System<T> {
   ///   input port is direct-feedthrough to an output port, this function must
   ///   return true for those two ports.
   virtual bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
-                                      int input_port,
-                                      int output_port) const {
+                                      int input_port, int output_port) const {
     DRAKE_ASSERT(input_port >= 0);
     DRAKE_ASSERT(input_port < this->get_num_input_ports());
     DRAKE_ASSERT(output_port >= 0);
@@ -477,7 +477,8 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may perform
   /// the given type of action.
-  void DeclarePeriodicAction(double period_sec, double offset_sec,
+  void DeclarePeriodicAction(
+      double period_sec, double offset_sec,
       const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
@@ -492,7 +493,7 @@ class LeafSystem : public System<T> {
   /// the discrete state.
   void DeclareDiscreteUpdatePeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0.0,
-        DiscreteEvent<T>::kDiscreteUpdateAction);
+                          DiscreteEvent<T>::kDiscreteUpdateAction);
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
@@ -501,7 +502,7 @@ class LeafSystem : public System<T> {
   /// discrete state.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
-        DiscreteEvent<T>::kDiscreteUpdateAction);
+                          DiscreteEvent<T>::kDiscreteUpdateAction);
   }
 
   /// Declares that this System has a simple, fixed-period unrestricted state
@@ -510,7 +511,7 @@ class LeafSystem : public System<T> {
   /// unrestricted updates.
   void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
-        DiscreteEvent<T>::kUnrestrictedUpdateAction);
+                          DiscreteEvent<T>::kUnrestrictedUpdateAction);
   }
 
   /// Declares that this System has a simple, fixed-period publish.
@@ -553,8 +554,8 @@ class LeafSystem : public System<T> {
   /// miscellaneous state variables, stored in a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
   /// effect if AllocateContinuousState is overridden.
-  void DeclareContinuousState(const BasicVector<T>& model_vector,
-                              int num_q, int num_v, int num_z) {
+  void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
+                              int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
     model_continuous_state_vector_ = model_vector.Clone();
     num_generalized_positions_ = num_q;
@@ -716,7 +717,7 @@ class LeafSystem : public System<T> {
     // Compute the index in the sequence of samples for the next time to sample,
     // which should be greater than the present time.
     const T offset_time = current_time_sec - offset;
-    const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
+    const T next_k = offset_time / period;
     T next_t = offset + next_k * period;
     if (next_t <= current_time_sec) {
       next_t = offset + (next_k + 1) * period;

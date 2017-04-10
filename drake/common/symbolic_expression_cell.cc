@@ -397,7 +397,7 @@ Polynomial<double> ExpressionNaN::ToPolynomial() const {
 }
 
 double ExpressionNaN::Evaluate(const Environment& env) const {
-  throw runtime_error("NaN is detected during Symbolic computation.");
+  return std::numeric_limits<double>::quiet_NaN();
 }
 
 Expression ExpressionNaN::Expand() const {

@@ -134,6 +134,7 @@ drake_cc_library(
         ":common",
         ":cond",
         ":dummy_value",
+        ":extract_double",
         ":number_traits",
         ":polynomial",
         "//drake/math:matrix_util",
