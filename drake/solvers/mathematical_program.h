@@ -730,8 +730,7 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   Binding<LinearCost> AddLinearCost(const Eigen::Ref<const Eigen::VectorXd>& a,
-                                    double b,
-                                    const VariableRefList& vars) {
+                                    double b, const VariableRefList& vars) {
     return AddLinearCost(a, b, ConcatenateVariableRefList((vars)));
   }
 
@@ -741,8 +740,7 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   Binding<LinearCost> AddLinearCost(
-      const Eigen::Ref<const Eigen::VectorXd>& a,
-      double b,
+      const Eigen::Ref<const Eigen::VectorXd>& a, double b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
@@ -828,8 +826,7 @@ class MathematicalProgram {
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& b,
-      double c,
+      const Eigen::Ref<const Eigen::VectorXd>& b, double c,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**

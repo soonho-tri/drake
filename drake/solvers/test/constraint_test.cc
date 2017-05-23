@@ -51,10 +51,8 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   VectorXd y;
   cnstr.Eval(x_test, y);
   Eigen::VectorXd z = A * x_test + b;
-  Vector3d y_expected(
-      z(0),
-      z(1),
-      z(0) * z(1) - z.tail(z.size() - 2).squaredNorm());
+  Vector3d y_expected(z(0), z(1),
+                      z(0) * z(1) - z.tail(z.size() - 2).squaredNorm());
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
