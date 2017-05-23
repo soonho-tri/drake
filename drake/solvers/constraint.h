@@ -531,14 +531,14 @@ class LinearEqualityConstraint : public LinearConstraint {
 };
 
 /**
-* Implements a constraint of the form @f lb <= x <= ub @f
-*
-* Note: the base Constraint class (as implemented at the moment) could
-* play this role.  But this class enforces that it is ONLY a bounding
-* box constraint, and not something more general.  Some solvers use
-* this information to handle bounding box constraints differently than
-* general constraints, so use of this form is encouraged.
-*/
+ * Implements a constraint of the form @f lb <= x <= ub @f
+ *
+ * Note: the base Constraint class (as implemented at the moment) could
+ * play this role.  But this class enforces that it is ONLY a bounding
+ * box constraint, and not something more general.  Some solvers use
+ * this information to handle bounding box constraints differently than
+ * general constraints, so use of this form is encouraged.
+ */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)

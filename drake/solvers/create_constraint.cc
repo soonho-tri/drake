@@ -217,8 +217,7 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     return ParseLinearEqualityConstraint(get_operands(f));
   }
   ostringstream oss;
-  oss << "ParseLinearConstraint is called with a formula "
-      << f
+  oss << "ParseLinearConstraint is called with a formula " << f
       << " which is neither an equality formula nor a conjunction of equality "
          "formulas.";
   throw runtime_error(oss.str());
