@@ -1991,6 +1991,69 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
 }
 
-}  // namespace test
+GTEST_TEST(testMathematicalProgram, Disjunction) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<6>("x");
+
+  // 1. LinearConstraint:
+  //   -10 <=  x₀ + 2x₁ <= 10
+  //   -20 <= 3x₀ + 4x₁ <= 20
+  Matrix<Expression, 2, 1> M_e;
+  Eigen::Vector2d lb{-10, -20};
+  Eigen::Vector2d ub{10, 20};
+  // clang-format off
+  M_e <<     x(0) + 2 * x(1),
+         3 * x(0) + 4 * x(1);
+  // clang-format on
+
+  // 2. QuadraticConstraint
+  //   -10 <= x₂² + 2x₂x₃ + x₃² + x₂ + x₃ <= 10
+
+  Eigen::Matrix2d Q;
+  // clang-format off
+  Q << 2, 2,
+       2, 2;
+  // clang-format on
+  Eigen::Vector2d b(1, 1);
+  quadratic_constraint_ = std::make_shared<QuadraticConstraint>(Q, b, -10, 10);
+
+  // 3. BoundingBoxConstraint
+  //   -10 <= x₅ <= 10
+  //   -20 <= x₆ <= 20
+  boundingbox_constraint_ = std::make_shared<BoundingBoxConstraint>(lb, ub);
+
+  // 4. Build a disjunctive constraint c1 ∨ c2 ∨ c3.
+  disjunctive_constraint_ = internal::MakeDisjunctiveConstraint(
+      {linear_constraint_, quadratic_constraint_, boundingbox_constraint_});
+}
+
+void CheckEval(const Eigen::Ref<const Eigen::VectorXd>& x) {
+  Vector2d x_linear{x.segment(0, 2)};
+  VectorXd y_linear{2};
+  linear_constraint_->Eval(x_linear, y_linear);
+
+  Vector2d x_quadratic{x.segment(2, 2)};
+  VectorXd y_quadratic{1};
+  quadratic_constraint_->Eval(x_quadratic, y_quadratic);
+
+  Vector2d x_boundingbox{x.segment(4, 2)};
+  VectorXd y_boundingbox{2};
+  boundingbox_constraint_->Eval(x_boundingbox, y_boundingbox);
+
+  VectorXd y{6};
+  disjunctive_constraint_->Eval(x, y);
+
+  EXPECT_EQ(y.segment(0, 2), y_linear);
+  EXPECT_EQ(y.segment(2, 1), y_quadratic);
+  EXPECT_EQ(y.segment(3, 2), y_boundingbox);
+}
+
+Binding<LinearConstraint> linear_binding_;
+Binding<QuadraticConstraint> quadratic_binding_;
+Binding<BoundingBoxConstraint> boundingbox_binding_;
+Binding<DisjunctiveConstraint> disjunctive_binding_;
+};  // namespace test
+
 }  // namespace solvers
 }  // namespace drake
+}  // namespace solvers

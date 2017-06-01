@@ -4,6 +4,8 @@
 #include <limits>
 #include <list>
 #include <map>
+#include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -751,5 +753,57 @@ class LinearMatrixInequalityConstraint : public Constraint {
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
 };
+
+/// Represents a disjunction of constraints.
+/// The followings should hold for a disjunctive constraint c = c₁ ∨ ... cₙ.:
+///     num_constraints(c) = ∑ᵢ num_constraints(cᵢ)
+///     num_vars(c)        = ∑ᵢ num_vars(cᵢ)
+class DisjunctiveConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DisjunctiveConstraint)
+
+  /// Constructs a disjunctive constraint.
+  template <typename DerivedLB, typename DerivedUB>
+  DisjunctiveConstraint(
+      size_t num_constraints, int num_vars,
+      const Eigen::MatrixBase<DerivedLB>& lb,
+      const Eigen::MatrixBase<DerivedUB>& ub, const std::string& description,
+      const std::vector<std::shared_ptr<Constraint>>& constraints)
+      : Constraint{num_constraints, num_vars, lb, ub, description},
+        constraints_{constraints} {
+    // Checks num_constraints(c) = ∑ᵢ num_constraints(cᵢ).
+    const auto plus_num_constraints = [](const size_t sum,
+                                         const std::shared_ptr<Constraint>& c) {
+      return c->num_constraints() + sum;
+    };
+    DRAKE_DEMAND(std::accumulate(constraints.cbegin(), constraints.cend(), 0u,
+                                 plus_num_constraints) ==
+                 this->num_constraints());
+    // Checks num_vars(c) = ∑ᵢ num_vars(cᵢ).
+    const auto plus_num_vars = [](const int sum,
+                                  const std::shared_ptr<Constraint>& c) {
+      return c->num_vars() + sum;
+    };
+    DRAKE_DEMAND(std::accumulate(constraints.cbegin(), constraints.cend(), 0,
+                                 plus_num_vars) == this->num_vars());
+  }
+
+  ~DisjunctiveConstraint() override {}
+
+  /// Returns i-th disjunct(constraint).
+  const std::shared_ptr<Constraint>& get_constraint(int i) const {
+    return constraints_[i];
+  }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  std::vector<std::shared_ptr<Constraint>> constraints_;
+};
+
 }  // namespace solvers
 }  // namespace drake

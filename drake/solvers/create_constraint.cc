@@ -1,6 +1,7 @@
 #include "drake/solvers/create_constraint.h"
 
 #include <algorithm>
+#include <numeric>
 #include <sstream>
 
 #include "drake/solvers/symbolic_extraction.h"
@@ -9,6 +10,7 @@ namespace drake {
 namespace solvers {
 namespace internal {
 
+using std::accumulate;
 using std::find;
 using std::make_shared;
 using std::numeric_limits;
@@ -401,6 +403,55 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   }
   expr(expr.rows() - 1) = std::sqrt(constant);
   return ParseLorentzConeConstraint(expr);
+}
+
+shared_ptr<DisjunctiveConstraint> MakeDisjunctiveConstraint(
+    const vector<shared_ptr<Constraint>>& constraints) {
+  const size_t num_constraints{
+      accumulate(constraints.begin(), constraints.end(), 0u,
+                 [](const size_t v, const shared_ptr<Constraint>& c) {
+                   return v + c->num_constraints();
+                 })};
+  const int num_vars{
+      accumulate(constraints.begin(), constraints.end(), 0,
+                 [](const int v, const shared_ptr<Constraint>& c) {
+                   return v + c->num_vars();
+                 })};
+  Eigen::VectorXd lower_bound{num_constraints};
+  Eigen::VectorXd upper_bound{num_constraints};
+  int idx{0};
+  for (const shared_ptr<Constraint>& c : constraints) {
+    const auto num_constraints_of_c = c->num_constraints();
+    lower_bound.segment(idx, num_constraints_of_c) = c->lower_bound();
+    upper_bound.segment(idx, num_constraints_of_c) = c->upper_bound();
+    idx += num_constraints_of_c;
+  }
+  return make_shared<DisjunctiveConstraint>(
+      num_constraints, num_vars, lower_bound, upper_bound,
+      "Disjunctive Constraint", constraints);
+}
+
+Binding<DisjunctiveConstraint> MakeDisjunctiveConstraint(
+    const vector<Binding<Constraint>>& bindings) {
+  const size_t num_elements{
+      accumulate(bindings.begin(), bindings.end(), 0u,
+                 [](const size_t v, const Binding<Constraint>& binding) {
+                   return v + binding.GetNumElements();
+                 })};
+  VectorXDecisionVariable variables(num_elements);
+  vector<shared_ptr<Constraint>> constraints;
+  constraints.reserve(bindings.size());
+
+  int idx{0};
+  for (const Binding<Constraint>& binding : bindings) {
+    const auto& variables_in_binding = binding.variables();
+    constraints.push_back(binding.constraint());
+    variables.segment(idx, variables_in_binding.size()) = variables_in_binding;
+    idx += variables_in_binding.size();
+  }
+
+  return Binding<DisjunctiveConstraint>(MakeDisjunctiveConstraint(constraints),
+                                        variables);
 }
 
 }  // namespace internal

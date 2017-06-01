@@ -1985,6 +1985,12 @@ class MathematicalProgram {
     return linear_complementarity_constraints_;
   }
 
+  /** Gets all disjunctive constraints. */
+  const std::vector<Binding<DisjunctiveConstraint>>& disjunctive_constraints()
+      const {
+    return disjunctive_constraints_;
+  }
+
   // Base class for solver-specific data.  A solver implementation may derive
   // a helper class from this for use with getSolverData.
   struct SolverData {
@@ -2112,6 +2118,8 @@ class MathematicalProgram {
   // TODO(ggould-tri) can this constraint be relaxed?
   std::vector<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
+
+  std::vector<Binding<DisjunctiveConstraint>> disjunctive_constraints_;
 
   size_t num_vars_;
   Eigen::VectorXd x_initial_guess_;

@@ -191,5 +191,41 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
   }
 }
+
+namespace {
+template <typename T>
+void DoEvalDisjunctiveConstraint(
+    const Eigen::Ref<const T>& x, T* const y,
+    const vector<shared_ptr<Constraint>>& constraints) {
+  int idx_x{0};
+  int idx_y{0};
+  for (const auto& c : constraints) {
+    const int num_vars_of_c{c->num_vars()};
+    const size_t num_constraints_of_c{c->num_constraints()};
+    // The type of the second argument of `Eval` method is `VectorXd&` or
+    // `AutoDiffVecXd&` and it is not compatible with their `SegmentType` so we
+    // need to have a temp variable `y_of_c` here (instead of passing
+    // `y.segment(idx_y, num_constraints_of_c)`.
+    T y_of_c{num_constraints_of_c};
+    c->Eval(x.segment(idx_x, num_vars_of_c), y_of_c);
+    y->segment(idx_y, num_constraints_of_c) = y_of_c;
+    idx_x += num_vars_of_c;
+    idx_y += num_constraints_of_c;
+  }
+}
+}  // namespace
+
+void DisjunctiveConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                   Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  return DoEvalDisjunctiveConstraint(x, &y, constraints_);
+}
+
+void DisjunctiveConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                   AutoDiffVecXd& y) const {
+  y.resize(num_constraints());
+  return DoEvalDisjunctiveConstraint(x, &y, constraints_);
+}
+
 }  // namespace solvers
 }  // namespace drake

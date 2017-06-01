@@ -292,6 +292,20 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 //   return std::make_tuple(linear_binding, psd_binding);
 // }
 
+/*
+ * Makes a shared pointer to DisjunctiveConstraint (c₁ ∨ ... cₙ) from a vector
+ * of shared pointers to constraints ({c₁, ..., cₙ}).
+ */
+std::shared_ptr<DisjunctiveConstraint> MakeDisjunctiveConstraint(
+    const std::vector<std::shared_ptr<Constraint>>& constraints);
+
+/*
+ * Makes a binding of DisjunctiveConstraint (c₁ ∨ ... cₙ) from a vector
+ * of bindings of constraints ({c₁, ..., cₙ}).
+ */
+Binding<DisjunctiveConstraint> MakeDisjunctiveConstraint(
+    const std::vector<Binding<Constraint>>& bindings);
+
 template <typename Derived>
 typename std::enable_if<
     detail::is_eigen_vector_of<Derived, symbolic::Formula>::value,

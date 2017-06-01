@@ -5,6 +5,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/create_constraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -216,6 +217,79 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
   EXPECT_TRUE(
       CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
   EXPECT_FALSE(c.CheckSatisfied(x2));
+}
+
+class DisjunctiveConstraintTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // 1. LinearConstraint:
+    //   -10 <=  x₁ + 2x₂ <= 10
+    //   -20 <= 3x₁ + 4x₂ <= 20
+    Eigen::Matrix2d a;
+    // clang-format off
+  a << 1, 2,
+       3, 4;
+    // clang-format on
+    const Eigen::Vector2d lb(-10, -20);
+    const Eigen::Vector2d ub(10, 20);
+    linear_constraint_ = std::make_shared<LinearConstraint>(a, lb, ub);
+
+    // 2. QuadraticConstraint
+    //   -10 <= x₃² + 2x₃x₄ + x₄² + x₃ + x₄ <= 10
+    Eigen::Matrix2d Q;
+    // clang-format off
+  Q << 2, 2,
+       2, 2;
+    // clang-format on
+    Eigen::Vector2d b(1, 1);
+    quadratic_constraint_ =
+        std::make_shared<QuadraticConstraint>(Q, b, -10, 10);
+
+    // 3. BoundingBoxConstraint
+    //   -10 <= x₅ <= 10
+    //   -20 <= x₆ <= 20
+    boundingbox_constraint_ = std::make_shared<BoundingBoxConstraint>(lb, ub);
+
+    // 4. Build a disjunctive constraint c1 ∨ c2 ∨ c3.
+    disjunctive_constraint_ = internal::MakeDisjunctiveConstraint(
+        {linear_constraint_, quadratic_constraint_, boundingbox_constraint_});
+  }
+
+  void CheckEval(const Eigen::Ref<const Eigen::VectorXd>& x) {
+    Vector2d x_linear{x.segment(0, 2)};
+    VectorXd y_linear{2};
+    linear_constraint_->Eval(x_linear, y_linear);
+
+    Vector2d x_quadratic{x.segment(2, 2)};
+    VectorXd y_quadratic{1};
+    quadratic_constraint_->Eval(x_quadratic, y_quadratic);
+
+    Vector2d x_boundingbox{x.segment(4, 2)};
+    VectorXd y_boundingbox{2};
+    boundingbox_constraint_->Eval(x_boundingbox, y_boundingbox);
+
+    VectorXd y{6};
+    disjunctive_constraint_->Eval(x, y);
+
+    EXPECT_EQ(y.segment(0, 2), y_linear);
+    EXPECT_EQ(y.segment(2, 1), y_quadratic);
+    EXPECT_EQ(y.segment(3, 2), y_boundingbox);
+  }
+
+  std::shared_ptr<LinearConstraint> linear_constraint_;
+  std::shared_ptr<QuadraticConstraint> quadratic_constraint_;
+  std::shared_ptr<BoundingBoxConstraint> boundingbox_constraint_;
+  std::shared_ptr<DisjunctiveConstraint> disjunctive_constraint_;
+};
+
+TEST_F(DisjunctiveConstraintTest, CheckEval) {
+  VectorXd x1(6);
+  x1 << 1, 2, 1, 2, 1, 2;
+  CheckEval(x1);
+
+  VectorXd x2(6);
+  x2 << -1, -2, -1, -2, -1, -2;
+  CheckEval(x2);
 }
 }  // namespace
 }  // namespace solvers
