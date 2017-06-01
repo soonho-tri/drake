@@ -166,20 +166,29 @@ Expression Expression::Expand() const {
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Substitute({{var, e}});
+  DRAKE_DEMAND(var.get_type() != Variable::Type::BOOLEAN);
+  return ptr_->Substitute({{var, e}}, {});
 }
 
-Expression Expression::Substitute(const Substitution& s) const {
+Expression Expression::Substitute(const Variable& var, const Formula& f) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (!s.empty()) {
-    return Expression{ptr_->Substitute(s)};
+  DRAKE_DEMAND(var.get_type() == Variable::Type::BOOLEAN);
+  return ptr_->Substitute({}, {{var, f}});
+}
+
+Expression Expression::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (!expr_subst.empty() || !formula_subst.empty()) {
+    return ptr_->Substitute(expr_subst, formula_subst);
   }
   return *this;
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Differentiate(x)};
+  return ptr_->Differentiate(x);
 }
 
 string Expression::to_string() const {
@@ -277,7 +286,7 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
 Expression operator-(const Expression& e) {
   // Simplification: constant folding
   if (is_constant(e)) {
-    return Expression{-get_constant_value(e)};
+    return -get_constant_value(e);
   }
   // Simplification: push '-' inside over '+'.
   // -(E_1 + ... + E_n) => (-E_1 + ... + -E_n)
@@ -416,7 +425,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   }
   if (is_constant(lhs) && is_constant(rhs)) {
     // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
-    lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
+    lhs = get_constant_value(lhs) * get_constant_value(rhs);
     return lhs;
   }
   // Simplification: flattening

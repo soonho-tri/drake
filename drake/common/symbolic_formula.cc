@@ -83,13 +83,21 @@ bool Formula::Evaluate(const Environment& env) const {
 
 Formula Formula::Substitute(const Variable& var, const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Formula{ptr_->Substitute({{var, e}})};
+  DRAKE_DEMAND(var.get_type() != Variable::Type::BOOLEAN);
+  return ptr_->Substitute({{var, e}}, {});
 }
 
-Formula Formula::Substitute(const Substitution& s) const {
+Formula Formula::Substitute(const Variable& var, const Formula& f) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (!s.empty()) {
-    return Formula{ptr_->Substitute(s)};
+  DRAKE_DEMAND(var.get_type() == Variable::Type::BOOLEAN);
+  return ptr_->Substitute({}, {{var, f}});
+}
+
+Formula Formula::Substitute(const ExpressionSubstitution& expr_subst,
+                            const FormulaSubstitution& formula_subst) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (!expr_subst.empty() || !formula_subst.empty()) {
+    return ptr_->Substitute(expr_subst, formula_subst);
   }
   return *this;
 }

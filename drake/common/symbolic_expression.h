@@ -92,10 +92,17 @@ class ExpressionUninterpretedFunction;  // In symbolic_expression_cell.h
 class Formula;                          // In symbolic_formula.h
 class Expression;
 
-// Substitution is a map from a Variable to a symbolic expression. It is used in
-// Expression::Substitute and Formula::Substitute methods as an argument.
-using Substitution =
+// ExpressionSubstitution is a map from a Variable to a symbolic expression. It
+// is used in Expression::Substitute and Formula::Substitute methods as an
+// argument.
+using ExpressionSubstitution =
     std::unordered_map<Variable, Expression, hash_value<Variable>>;
+
+// FormulaSubstitution is a map from a Variable to a symbolic formula. It
+// is used in Expression::Substitute and Formula::Substitute methods as an
+// argument.
+using FormulaSubstitution =
+    std::unordered_map<Variable, Formula, hash_value<Variable>>;
 
 /** Represents a symbolic form of an expression.
 
@@ -241,18 +248,33 @@ class Expression {
   Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
-   * with @p e.
+   * with an expression @p e.
+   *
+   * @pre @p var is not a Boolean variable.
    * @throws std::runtime_error if NaN is detected during substitution.
    */
   Expression Substitute(const Variable& var, const Expression& e) const;
 
-  /** Returns a copy of this expression replacing all occurrences of the
-   * variables in @p s with corresponding expressions in @p s. Note that the
-   * substitutions occur simultaneously. For example, (x / y).Substitute({{x,
-   * y}, {y, x}}) gets (y / x).
+  /** Returns a copy of this expression replacing all occurrences of @p var
+   * with a formula @p f.
+   *
+   * @pre @p var is a Boolean variable.
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Expression Substitute(const Substitution& s) const;
+  Expression Substitute(const Variable& var, const Formula& f) const;
+
+  /** Returns a copy of this expression replacing all occurrences of the
+   * variables in @p expr_subst with corresponding expressions in @p expr_subst
+   * and all occurrences of the variables in @p formula_subst with corresponding
+   * formulas in @p formula_subst.
+   *
+   * Note that the substitutions occur simultaneously. For example,
+   * (x / y).Substitute({{x, y}, {y, x}}, {}) gets (y / x).
+   *
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  Expression Substitute(const ExpressionSubstitution& expr_subst,
+                        const FormulaSubstitution& formula_subst = {}) const;
 
   /** Differentiates this symbolic expression with respect to the variable @p
    * var.

@@ -89,8 +89,8 @@ class MonomialTest : public ::testing::Test {
 
   // Helper function to extract Substitution (Variable -> Expression) from a
   // symbolic environment.
-  Substitution ExtractSubst(const Environment& env) {
-    Substitution subst;
+  ExpressionSubstitution ExtractSubst(const Environment& env) {
+    ExpressionSubstitution subst;
     subst.reserve(env.size());
     for (const pair<Variable, double>& p : env) {
       subst.emplace(p.first, p.second);
@@ -147,7 +147,7 @@ class MonomialTest : public ::testing::Test {
         {var_y_.get_id(), var_y_},
         {var_z_.get_id(), var_z_},
     };
-    const Substitution subst{ExtractSubst(env)};
+    const ExpressionSubstitution subst{ExtractSubst(env)};
 
     const Expression e1{m.ToExpression(id_to_var_map).Substitute(subst)};
 

@@ -305,9 +305,11 @@ double ExpressionVar::Evaluate(const Environment& env) const {
 
 Expression ExpressionVar::Expand() const { return Expression{var_}; }
 
-Expression ExpressionVar::Substitute(const Substitution& s) const {
-  const Substitution::const_iterator it{s.find(var_)};
-  if (it != s.end()) {
+Expression ExpressionVar::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  const ExpressionSubstitution::const_iterator it{expr_subst.find(var_)};
+  if (it != expr_subst.end()) {
     return it->second;
   }
   return Expression{var_};
@@ -352,7 +354,8 @@ double ExpressionConstant::Evaluate(const Environment&) const {
 
 Expression ExpressionConstant::Expand() const { return Expression{v_}; }
 
-Expression ExpressionConstant::Substitute(const Substitution&) const {
+Expression ExpressionConstant::Substitute(const ExpressionSubstitution&,
+                                          const FormulaSubstitution&) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
 }
@@ -400,7 +403,8 @@ Expression ExpressionNaN::Expand() const {
   throw runtime_error("NaN is detected during expansion.");
 }
 
-Expression ExpressionNaN::Substitute(const Substitution&) const {
+Expression ExpressionNaN::Substitute(const ExpressionSubstitution&,
+                                     const FormulaSubstitution&) const {
   throw runtime_error("NaN is detected during substitution.");
 }
 
@@ -505,12 +509,15 @@ Expression ExpressionAdd::Expand() const {
       });
 }
 
-Expression ExpressionAdd::Substitute(const Substitution& s) const {
+Expression ExpressionAdd::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
   return accumulate(
       expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
       Expression{constant_},
-      [&s](const Expression& init, const pair<Expression, double>& p) {
-        return init + p.first.Substitute(s) * p.second;
+      [&expr_subst, &formula_subst](const Expression& init,
+                                    const pair<Expression, double>& p) {
+        return init + p.first.Substitute(expr_subst, formula_subst) * p.second;
       });
 }
 
@@ -765,12 +772,16 @@ Expression ExpressionMul::Expand() const {
       });
 }
 
-Expression ExpressionMul::Substitute(const Substitution& s) const {
+Expression ExpressionMul::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Expression{constant_},
-      [&s](const Expression& init, const pair<Expression, Expression>& p) {
-        return init * pow(p.first.Substitute(s), p.second.Substitute(s));
+      [&expr_subst, &formula_subst](const Expression& init,
+                                    const pair<Expression, Expression>& p) {
+        return init * pow(p.first.Substitute(expr_subst, formula_subst),
+                          p.second.Substitute(expr_subst, formula_subst));
       });
 }
 
@@ -963,9 +974,11 @@ Expression ExpressionDiv::Expand() const {
   return get_first_argument().Expand() / get_second_argument().Expand();
 }
 
-Expression ExpressionDiv::Substitute(const Substitution& s) const {
-  return get_first_argument().Substitute(s) /
-         get_second_argument().Substitute(s);
+Expression ExpressionDiv::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return get_first_argument().Substitute(expr_subst, formula_subst) /
+         get_second_argument().Substitute(expr_subst, formula_subst);
 }
 
 Expression ExpressionDiv::Differentiate(const Variable& x) const {
@@ -1010,8 +1023,10 @@ Expression ExpressionLog::Expand() const {
   return log(get_argument().Expand());
 }
 
-Expression ExpressionLog::Substitute(const Substitution& s) const {
-  return log(get_argument().Substitute(s));
+Expression ExpressionLog::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return log(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionLog::Differentiate(const Variable& x) const {
@@ -1040,8 +1055,10 @@ Expression ExpressionAbs::Expand() const {
   return abs(get_argument().Expand());
 }
 
-Expression ExpressionAbs::Substitute(const Substitution& s) const {
-  return abs(get_argument().Substitute(s));
+Expression ExpressionAbs::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return abs(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionAbs::Differentiate(const Variable& x) const {
@@ -1071,8 +1088,10 @@ Expression ExpressionExp::Expand() const {
   return exp(get_argument().Expand());
 }
 
-Expression ExpressionExp::Substitute(const Substitution& s) const {
-  return exp(get_argument().Substitute(s));
+Expression ExpressionExp::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return exp(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionExp::Differentiate(const Variable& x) const {
@@ -1107,8 +1126,10 @@ Expression ExpressionSqrt::Expand() const {
   return sqrt(get_argument().Expand());
 }
 
-Expression ExpressionSqrt::Substitute(const Substitution& s) const {
-  return sqrt(get_argument().Substitute(s));
+Expression ExpressionSqrt::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return sqrt(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionSqrt::Differentiate(const Variable& x) const {
@@ -1153,9 +1174,11 @@ Expression ExpressionPow::Expand() const {
                    get_second_argument().Expand());
 }
 
-Expression ExpressionPow::Substitute(const Substitution& s) const {
-  return pow(get_first_argument().Substitute(s),
-             get_second_argument().Substitute(s));
+Expression ExpressionPow::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return pow(get_first_argument().Substitute(expr_subst, formula_subst),
+             get_second_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionPow::Differentiate(const Variable& x) const {
@@ -1183,8 +1206,10 @@ Expression ExpressionSin::Expand() const {
   return sin(get_argument().Expand());
 }
 
-Expression ExpressionSin::Substitute(const Substitution& s) const {
-  return sin(get_argument().Substitute(s));
+Expression ExpressionSin::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return sin(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionSin::Differentiate(const Variable& x) const {
@@ -1210,8 +1235,10 @@ Expression ExpressionCos::Expand() const {
   return cos(get_argument().Expand());
 }
 
-Expression ExpressionCos::Substitute(const Substitution& s) const {
-  return cos(get_argument().Substitute(s));
+Expression ExpressionCos::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return cos(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionCos::Differentiate(const Variable& x) const {
@@ -1237,8 +1264,10 @@ Expression ExpressionTan::Expand() const {
   return tan(get_argument().Expand());
 }
 
-Expression ExpressionTan::Substitute(const Substitution& s) const {
-  return tan(get_argument().Substitute(s));
+Expression ExpressionTan::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return tan(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionTan::Differentiate(const Variable& x) const {
@@ -1273,8 +1302,10 @@ Expression ExpressionAsin::Expand() const {
   return asin(get_argument().Expand());
 }
 
-Expression ExpressionAsin::Substitute(const Substitution& s) const {
-  return asin(get_argument().Substitute(s));
+Expression ExpressionAsin::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return asin(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionAsin::Differentiate(const Variable& x) const {
@@ -1312,8 +1343,10 @@ Expression ExpressionAcos::Expand() const {
   return acos(get_argument().Expand());
 }
 
-Expression ExpressionAcos::Substitute(const Substitution& s) const {
-  return acos(get_argument().Substitute(s));
+Expression ExpressionAcos::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return acos(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionAcos::Differentiate(const Variable& x) const {
@@ -1342,8 +1375,10 @@ Expression ExpressionAtan::Expand() const {
   return atan(get_argument().Expand());
 }
 
-Expression ExpressionAtan::Substitute(const Substitution& s) const {
-  return atan(get_argument().Substitute(s));
+Expression ExpressionAtan::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return atan(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionAtan::Differentiate(const Variable& x) const {
@@ -1369,9 +1404,11 @@ Expression ExpressionAtan2::Expand() const {
   return atan2(get_first_argument().Expand(), get_second_argument().Expand());
 }
 
-Expression ExpressionAtan2::Substitute(const Substitution& s) const {
-  return atan2(get_first_argument().Substitute(s),
-               get_second_argument().Substitute(s));
+Expression ExpressionAtan2::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return atan2(get_first_argument().Substitute(expr_subst, formula_subst),
+               get_second_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionAtan2::Differentiate(const Variable& x) const {
@@ -1402,8 +1439,10 @@ Expression ExpressionSinh::Expand() const {
   return sinh(get_argument().Expand());
 }
 
-Expression ExpressionSinh::Substitute(const Substitution& s) const {
-  return sinh(get_argument().Substitute(s));
+Expression ExpressionSinh::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return sinh(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionSinh::Differentiate(const Variable& x) const {
@@ -1429,8 +1468,10 @@ Expression ExpressionCosh::Expand() const {
   return cosh(get_argument().Expand());
 }
 
-Expression ExpressionCosh::Substitute(const Substitution& s) const {
-  return cosh(get_argument().Substitute(s));
+Expression ExpressionCosh::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return cosh(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionCosh::Differentiate(const Variable& x) const {
@@ -1456,8 +1497,10 @@ Expression ExpressionTanh::Expand() const {
   return tanh(get_argument().Expand());
 }
 
-Expression ExpressionTanh::Substitute(const Substitution& s) const {
-  return tanh(get_argument().Substitute(s));
+Expression ExpressionTanh::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return tanh(get_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionTanh::Differentiate(const Variable& x) const {
@@ -1483,9 +1526,11 @@ Expression ExpressionMin::Expand() const {
   return min(get_first_argument().Expand(), get_second_argument().Expand());
 }
 
-Expression ExpressionMin::Substitute(const Substitution& s) const {
-  return min(get_first_argument().Substitute(s),
-             get_second_argument().Substitute(s));
+Expression ExpressionMin::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return min(get_first_argument().Substitute(expr_subst, formula_subst),
+             get_second_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionMin::Differentiate(const Variable& x) const {
@@ -1518,9 +1563,11 @@ Expression ExpressionMax::Expand() const {
   return max(get_first_argument().Expand(), get_second_argument().Expand());
 }
 
-Expression ExpressionMax::Substitute(const Substitution& s) const {
-  return max(get_first_argument().Substitute(s),
-             get_second_argument().Substitute(s));
+Expression ExpressionMax::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return max(get_first_argument().Substitute(expr_subst, formula_subst),
+             get_second_argument().Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionMax::Differentiate(const Variable& x) const {
@@ -1608,9 +1655,12 @@ Expression ExpressionIfThenElse::Expand() const {
   throw runtime_error("Not yet implemented.");
 }
 
-Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
-  return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
-                      e_else_.Substitute(s));
+Expression ExpressionIfThenElse::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
+  return if_then_else(f_cond_.Substitute(expr_subst, formula_subst),
+                      e_then_.Substitute(expr_subst, formula_subst),
+                      e_else_.Substitute(expr_subst, formula_subst));
 }
 
 Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
@@ -1677,19 +1727,26 @@ Expression ExpressionUninterpretedFunction::Expand() const {
 }
 
 Expression ExpressionUninterpretedFunction::Substitute(
-    const Substitution& s) const {
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
   // This method implements the following substitution:
-  //     uf(name, {v₁, ..., vₙ}).Substitute(s)
-  //   = uf(name, ⋃ᵢ s[vᵢ].GetVariables())
+  //     uf(name, {v₁, ..., vₙ}).Substitute(expr_subst, formula_subst)
+  //   = uf(name, ⋃ᵢ (expr_subst[vᵢ].GetVariables() ∪ formula_subst[vᵢ])
   //
   // For example, we have:
-  //     uf("uf1", {x, y}).Substitute({x ↦ 1, y ↦ y + z})
-  //   = uf("uf1", ∅ ∪ {y, z})
-  //   = uf("uf1", {y, z}).
+  //     uf("uf1", {x, y, b}).Substitute({x ↦ 1, y ↦ y + z}, {b ↦ x > 0})
+  //   = uf("uf1", ∅ ∪ {y, z} ∪ {x})
+  //   = uf("uf1", {x, y, z}).
   Variables new_vars;
   for (const auto& var : variables_) {
-    if (s.count(var) > 0) {
-      new_vars += s.at(var).GetVariables();
+    if (var.get_type() == Variable::Type::BOOLEAN) {
+      if (formula_subst.count(var) > 0) {
+        new_vars += formula_subst.at(var).GetFreeVariables();
+      }
+    } else {
+      if (expr_subst.count(var) > 0) {
+        new_vars += expr_subst.at(var).GetVariables();
+      }
     }
   }
   return uninterpreted_function(name_, new_vars);
