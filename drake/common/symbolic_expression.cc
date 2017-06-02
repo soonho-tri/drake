@@ -166,20 +166,40 @@ Expression Expression::Expand() const {
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Substitute({{var, e}});
+  return ptr_->Substitute({{var, e}}, {});
 }
 
-Expression Expression::Substitute(const Substitution& s) const {
+Expression Expression::Substitute(
+    const ExpressionSubstitution& expr_subst,
+    const FormulaSubstitution& formula_subst) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (!s.empty()) {
-    return Expression{ptr_->Substitute(s)};
+  if (!expr_subst.empty() || !formula_subst.empty()) {
+    return ptr_->Substitute(expr_subst, formula_subst);
+  }
+  return *this;
+}
+
+Expression Expression::Substitute(
+    const ExpressionSubstitution& expr_subst) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (!expr_subst.empty()) {
+    return ptr_->Substitute(expr_subst, {});
+  }
+  return *this;
+}
+
+Expression Expression::Substitute(
+    const FormulaSubstitution& formula_subst) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (!formula_subst.empty()) {
+    return ptr_->Substitute({}, formula_subst);
   }
   return *this;
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Differentiate(x)};
+  return ptr_->Differentiate(x);
 }
 
 string Expression::to_string() const {
@@ -216,8 +236,8 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   if (is_addition(lhs)) {
     // 1. (e_1 + ... + e_n) + rhs
     add_factory = to_addition(lhs);
-    // Note: AddExpression method takes care of the special case where `rhs` is
-    // of ExpressionAdd.
+    // Note: AddExpression method takes care of the special case where `rhs`
+    // is of ExpressionAdd.
     add_factory.AddExpression(rhs);
   } else {
     if (is_addition(rhs)) {
@@ -385,10 +405,10 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const Expression& e3{get_first_argument(rhs)};
       if (e1.EqualTo(e3)) {
         // Simplification: pow(e1, e2) * pow(e1, e4) => pow(e1, e2 + e4)
-        // TODO(soonho-tri): This simplification is not sound. For example, x^4
-        // * x^(-3) => x. The original expression `x^4 * x^(-3)` is evaluated to
-        // `nan` when x = 0 while the simplified expression `x` is evaluated to
-        // 0.
+        // TODO(soonho-tri): This simplification is not sound. For example,
+        // x^4 * x^(-3) => x. The original expression `x^4 * x^(-3)` is
+        // evaluated to `nan` when x = 0 while the simplified expression `x`
+        // is evaluated to 0.
         const Expression& e2{get_second_argument(lhs)};
         const Expression& e4{get_second_argument(rhs)};
         lhs = pow(e1, e2 + e4);
@@ -424,8 +444,8 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   if (is_multiplication(lhs)) {
     // (e_1 * ... * e_n) * rhs
     mul_factory = to_multiplication(lhs);
-    // Note: AddExpression method takes care of the special case where `rhs` is
-    // of ExpressionMul.
+    // Note: AddExpression method takes care of the special case where `rhs`
+    // is of ExpressionMul.
     mul_factory.AddExpression(rhs);
   } else {
     if (is_multiplication(rhs)) {

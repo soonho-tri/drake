@@ -42,7 +42,9 @@ class FormulaCell {
    * variables in @p s in the current formula cell with the corresponding
    * expressions in @p s.
    */
-  virtual Formula Substitute(const Substitution& s) const = 0;
+  virtual Formula Substitute(
+      const ExpressionSubstitution& expr_subst,
+      const FormulaSubstitution& formula_subst) const = 0;
   /** Outputs string representation of formula into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
@@ -139,7 +141,8 @@ class FormulaTrue : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -152,7 +155,8 @@ class FormulaFalse : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -167,7 +171,9 @@ class FormulaVar : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& subst) const override;
+  Formula Substitute(
+      const ExpressionSubstitution& expr_subst,
+      const FormulaSubstitution& formula_substubst) const override;
   std::ostream& Display(std::ostream& os) const override;
   const Variable& get_variable() const;
 
@@ -181,7 +187,8 @@ class FormulaEq : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaEq(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -191,7 +198,8 @@ class FormulaNeq : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaNeq(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -201,7 +209,8 @@ class FormulaGt : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaGt(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -211,7 +220,8 @@ class FormulaGeq : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaGeq(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -221,7 +231,8 @@ class FormulaLt : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaLt(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -231,7 +242,8 @@ class FormulaLeq : public RelationalFormulaCell {
   /** Constructs from @p e1 and @p e2. */
   FormulaLeq(const Expression& e1, const Expression& e2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -243,7 +255,8 @@ class FormulaAnd : public NaryFormulaCell {
   /** Constructs @p f1 ∧ @p f2. */
   FormulaAnd(const Formula& f1, const Formula& f2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -255,7 +268,8 @@ class FormulaOr : public NaryFormulaCell {
   /** Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -268,7 +282,8 @@ class FormulaNot : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the operand. */
   const Formula& get_operand() const { return f_; }
@@ -288,7 +303,8 @@ class FormulaForall : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the quantified variables. */
   const Variables& get_quantified_variables() const { return vars_; }
@@ -308,7 +324,8 @@ class FormulaIsnan : public FormulaCell {
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -378,7 +395,8 @@ class FormulaPositiveSemidefinite : public FormulaCell {
    */
   bool Less(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
-  Formula Substitute(const Substitution& s) const override;
+  Formula Substitute(const ExpressionSubstitution& expr_subst,
+                     const FormulaSubstitution& formula_subst) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the corresponding matrix in this PSD formula. */
   const MatrixX<symbolic::Expression>& get_matrix() const { return m_; }

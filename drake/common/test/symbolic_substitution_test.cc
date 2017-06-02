@@ -53,7 +53,7 @@ void CheckHomomorphism(const function<Expression(const Expression&)>& f,
 //
 // where we have x_i.Substitute(s) = e_i by a given substitution s.
 void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
-                       const Substitution& s) {
+                       const ExpressionSubstitution& s) {
   vector<Expression> args1;  // {x_1, ..., x_n}
   vector<Expression> args2;  // {e_1, ..., e_n}
   for (const pair<Variable, Expression>& p : s) {
@@ -98,8 +98,8 @@ void CheckHomomorphism(const function<Formula(const Expression&)>& f,
   EXPECT_PRED2(FormulaEqual, apply_subst, subst_apply);
 }
 
-// Checks if 'Formula::Substitute(const Substitution&)' is a homomorphism.
-// That is, we check if the following holds:
+// Checks if 'Formula::Substitute(const ExpressionSubstitution&)' is a
+// homomorphism. That is, we check if the following holds:
 //
 //     f({x_1, ..., x_n}).Substitute(s) = f({e_1, ..., e_n})
 //
@@ -108,7 +108,7 @@ void CheckHomomorphism(const function<Formula(const Expression&)>& f,
 // Note that the above assertion holds only if f is a quantifier-free
 // formula. We have a separate tests which covers the quantified case.
 void CheckHomomorphism(const function<Formula(const vector<Expression>&)>& f,
-                       const Substitution& s) {
+                       const ExpressionSubstitution& s) {
   vector<Expression> args1;  // {x_1, ..., x_n}
   vector<Expression> args2;  // {e_1, ..., e_n}
   for (const pair<Variable, Expression>& p : s) {
@@ -130,7 +130,7 @@ void CheckHomomorphism(const function<Formula(const vector<Expression>&)>& f,
   EXPECT_PRED2(FormulaEqual, apply_subst, subst_apply);
 }
 
-class SymbolicSubstitutionTest : public ::testing::Test {
+class SymbolicExpressionSubstitutionTest : public ::testing::Test {
  protected:
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -141,7 +141,7 @@ class SymbolicSubstitutionTest : public ::testing::Test {
   const Expression z_{var_z_};
 };
 
-TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
+TEST_F(SymbolicExpressionSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   using F = function<Expression(const Expression&)>;
 
   vector<F> fns;
@@ -212,7 +212,8 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   }
 }
 
-TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
+TEST_F(SymbolicExpressionSubstitutionTest,
+       CheckHomomorphismExpressionExpressionSubstitution) {
   using F = function<Expression(const vector<Expression>&)>;
 
   vector<F> fns;
@@ -252,7 +253,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
     return if_then_else(v[0] > v[1], v[1] * v[2], v[0] - v[2]);
   });
 
-  vector<Substitution> substs;
+  vector<ExpressionSubstitution> substs;
   substs.push_back({{var_x_, 1.0}, {var_y_, 1.0}, {var_z_, 2.0}});
   substs.push_back({{var_x_, -2.0}, {var_y_, 1.0}, {var_z_, z_}});
   substs.push_back({{var_x_, 0.0}, {var_y_, 0.0}, {var_z_, 5.0}});
@@ -267,13 +268,13 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
                     {var_z_, log(pow(x_, y_) * z_)}});
 
   for (const F& f : fns) {
-    for (const Substitution& s : substs) {
+    for (const ExpressionSubstitution& s : substs) {
       CheckHomomorphism(f, s);
     }
   }
 }
 
-TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
+TEST_F(SymbolicExpressionSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
   using F = function<Formula(const Expression&)>;
 
   vector<F> fns;
@@ -330,7 +331,8 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
   }
 }
 
-TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
+TEST_F(SymbolicExpressionSubstitutionTest,
+       CheckHomomorphismFormulaExpressionSubstitution) {
   using F = function<Formula(const vector<Expression>&)>;
 
   vector<F> fns;
@@ -369,7 +371,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
     return positive_semidefinite(m);
   });
 
-  vector<Substitution> substs;
+  vector<ExpressionSubstitution> substs;
   substs.push_back({{var_x_, 1.0}, {var_y_, 1.0}, {var_z_, 2.0}});
   substs.push_back({{var_x_, -2.0}, {var_y_, 1.0}, {var_z_, z_}});
   substs.push_back({{var_x_, 0.0}, {var_y_, 0.0}, {var_z_, 5.0}});
@@ -384,18 +386,18 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
                     {var_z_, log(pow(x_, y_) * z_)}});
 
   for (const F& f : fns) {
-    for (const Substitution& s : substs) {
+    for (const ExpressionSubstitution& s : substs) {
       CheckHomomorphism(f, s);
     }
   }
 }
 
-TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
+TEST_F(SymbolicExpressionSubstitutionTest, UninterpretedFunction) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
-  const Substitution s1{{var_x_, 1.0}, {var_y_, x_ + y_}};
-  const Substitution s2{{var_x_, y_}, {var_y_, z_}};
-  const Substitution s3{{var_x_, 3.0}, {var_y_, 4.0}};
+  const ExpressionSubstitution s1{{var_x_, 1.0}, {var_y_, x_ + y_}};
+  const ExpressionSubstitution s2{{var_x_, y_}, {var_y_, z_}};
+  const ExpressionSubstitution s3{{var_x_, 3.0}, {var_y_, 4.0}};
 
   // uf1 has no variables inside and substitution has no effect as a result.
   EXPECT_PRED2(ExprEqual, uf1.Substitute(s1), uf1);
@@ -418,7 +420,8 @@ TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
                uninterpreted_function("uf2", {}));
 }
 
-class ForallFormulaSubstitutionTest : public SymbolicSubstitutionTest {
+class ForallFormulaExpressionSubstitutionTest
+    : public SymbolicExpressionSubstitutionTest {
  protected:
   const Expression e_{x_ + y_ + z_};
   const Formula f1_{x_ + y_ > z_};
@@ -459,7 +462,7 @@ class ForallFormulaSubstitutionTest : public SymbolicSubstitutionTest {
       forall_x_11_, forall_x_12_, forall_x_13_, forall_x_14_};
 };
 
-TEST_F(ForallFormulaSubstitutionTest, VarExpr1) {
+TEST_F(ForallFormulaExpressionSubstitutionTest, VarExpr1) {
   vector<pair<Variable, Expression>> substs;
   substs.emplace_back(var_x_, 1.0);
   substs.emplace_back(var_x_, x_);
@@ -483,7 +486,7 @@ TEST_F(ForallFormulaSubstitutionTest, VarExpr1) {
   }
 }
 
-TEST_F(ForallFormulaSubstitutionTest, VarExpr2) {
+TEST_F(ForallFormulaExpressionSubstitutionTest, VarExpr2) {
   vector<pair<Variable, Expression>> substs;
   substs.emplace_back(var_y_, 1.0);
   substs.emplace_back(var_y_, y_);
@@ -523,8 +526,8 @@ TEST_F(ForallFormulaSubstitutionTest, VarExpr2) {
   }
 }
 
-TEST_F(ForallFormulaSubstitutionTest, VarExprSubstitution) {
-  vector<Substitution> substs;
+TEST_F(ForallFormulaExpressionSubstitutionTest, VarExprExpressionSubstitution) {
+  vector<ExpressionSubstitution> substs;
   substs.push_back({{var_x_, 1.0}, {var_y_, 1.0}, {var_z_, 2.0}});
   substs.push_back({{var_x_, -2.0}, {var_y_, 1.0}, {var_z_, z_}});
   substs.push_back({{var_x_, 0.0}, {var_y_, 0.0}, {var_z_, 5.0}});
@@ -552,7 +555,7 @@ TEST_F(ForallFormulaSubstitutionTest, VarExprSubstitution) {
     const Formula& nested_f{get_quantified_formula(f)};
 
     for (const auto& s : substs) {
-      Substitution s_minus_vars{s};
+      ExpressionSubstitution s_minus_vars{s};
       for (const Variable& quantified_var : vars) {
         s_minus_vars.erase(quantified_var);
       }
