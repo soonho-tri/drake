@@ -63,8 +63,8 @@ class MonomialTest : public ::testing::Test {
 
   // Helper function to extract Substitution (Variable -> Expression) from a
   // symbolic environment.
-  Substitution ExtractSubst(const Environment& env) {
-    Substitution subst;
+  ExpressionSubstitution ExtractSubst(const Environment& env) {
+    ExpressionSubstitution subst;
     subst.reserve(env.size());
     for (const pair<Variable, double>& p : env) {
       subst.emplace(p.first, p.second);
@@ -109,7 +109,14 @@ class MonomialTest : public ::testing::Test {
   // and Monomial. We obtain e2 by multiplying the two. Then, we check if e1 and
   // e2 are structurally equal.
   bool CheckSubstitute(const Monomial& m, const Environment& env) {
-    const Substitution subst{ExtractSubst(env)};
+    const unordered_map<Variable::Id, double> id_to_double_map{
+        ExtractIdToDoubleMap(env)};
+    const unordered_map<Variable::Id, Variable> id_to_var_map{
+        {var_x_.get_id(), var_x_},
+        {var_y_.get_id(), var_y_},
+        {var_z_.get_id(), var_z_},
+    };
+    const ExpressionSubstitution subst{ExtractSubst(env)};
 
     const Expression e1{m.ToExpression().Substitute(subst)};
 
