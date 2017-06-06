@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cstddef>
 #include <limits>
 #include <list>
@@ -51,8 +50,9 @@ class EvaluatorBase {
 
   virtual ~EvaluatorBase() {}
 
-  // TODO(bradking): consider using a Ref for `y`.  This will require the client
-  // to do allocation, but also allows it to choose stack allocation instead.
+  // TODO(bradking): consider using a Ref for `y`.  This will require the
+  // client to do allocation, but also allows it to choose stack allocation
+  // instead.
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
             Eigen::VectorXd& y) const {
@@ -273,25 +273,25 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
- A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
+ Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz
+ cone. A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
  @f[
  z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
  @f]
  <!-->
  z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
  <-->
- where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
- Ideally this constraint should be handled by a second-order cone solver.
- In case the user wants to enforce this constraint through general nonlinear
- optimization, with smooth gradient, we alternatively impose the following
- constraint, with smooth gradient everywhere
+ where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given
+ matrices. Ideally this constraint should be handled by a second-order cone
+ solver. In case the user wants to enforce this constraint through general
+ nonlinear optimization, with smooth gradient, we alternatively impose the
+ following constraint, with smooth gradient everywhere
  @f[
  a_0^Tx+b_0\ge 0\\
  (a_0^Tx+b_0)^2-(a_1^Tx+b_1)^2-...-(a_{n-1}^Tx+b_{n-1})^2 \ge 0
  @f]
- where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
- entry of vector @f$ b @f$.
+ where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the
+ i'th entry of vector @f$ b @f$.
 
  For more information and visualization, please refer to
  https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
@@ -340,7 +340,8 @@ class LorentzConeConstraint : public Constraint {
  * z_1 \ge 0\\
  * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
  * @f]
- * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
+ * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+ * matrices.
  * <!-->
  * z(0) >= 0
  * z(1) >= 0
@@ -521,7 +522,8 @@ class LinearEqualityConstraint : public LinearConstraint {
    *variable associations
    *
    * note that A and b can change size in the rows only (representing a
-   *different number of linear constraints, but on the same decision variables)
+   *different number of linear constraints, but on the same decision
+   *variables)
    */
   template <typename DerivedA, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
@@ -688,8 +690,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
               Eigen::VectorXd& y) const override;
 
   /**
-   * @param x The stacked columns of the symmetric matrix. This function is not
-   * supported yet, since Eigen's eigen value solver does not accept
+   * @param x The stacked columns of the symmetric matrix. This function is
+   * not supported yet, since Eigen's eigen value solver does not accept
    * AutoDiffScalar.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
@@ -709,7 +711,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
  * F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}
  * @f]
  * where p.s.d stands for positive semidefinite.
- * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
+ * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same
+ * size.
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
@@ -717,8 +720,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
 
   /**
    * @param F Each symmetric matrix F[i] should be of the same size.
-   * @param symmytry_tolerance  The precision to determine if the input matrices
-   * Fi are all symmetric. @see math::IsSymmetric().
+   * @param symmytry_tolerance  The precision to determine if the input
+   * matrices Fi are all symmetric. @see math::IsSymmetric().
    */
   LinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
@@ -751,5 +754,6 @@ class LinearMatrixInequalityConstraint : public Constraint {
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
 };
+
 }  // namespace solvers
 }  // namespace drake

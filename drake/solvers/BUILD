@@ -18,6 +18,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["binding.h"],
     deps = [
+        ":constraint",
         ":decision_variable",
     ],
 )

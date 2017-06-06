@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -68,8 +70,25 @@ class Binding {
   VectorXDecisionVariable vars_;
 };
 
-namespace internal {
+/// Binding representing a disjunction of constraints.
+class DisjunctiveBinding {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DisjunctiveBinding);
+  DisjunctiveBinding(const std::vector<Binding<Constraint>>& bindings);
 
+  const Binding<Constraint>& binding(int i) const { return bindings_.at(i); }
+
+  const std::shared_ptr<Constraint>& constraint() const { return constraint_; }
+
+  const VectorXDecisionVariable& variables() const { return vars_; }
+
+ private:
+  std::vector<Binding<Constraint>> bindings_;
+  VectorXDecisionVariable vars_;
+  std::shared_ptr<Constraint> constraint_;
+};
+
+namespace internal {
 /*
  * Create binding, inferring the type from the provided pointer.
  * @tparam C Cost or Constraint type to be bound.
