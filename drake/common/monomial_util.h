@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstddef>        // used
-#include <functional>     // used
-#include <map>            // used
-#include <set>            // used
-#include <unordered_map>  // used
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <set>
+#include <unordered_map>
 
 #include <Eigen/Core>
 
@@ -202,61 +202,6 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
   DRAKE_ASSERT(vars.size() == n);
   return ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars, degree);
 }
-
-// typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
-//     MonomialAsExpressionToCoefficientMap;
-// /**
-//  * Decomposes a polynomial `e` into monomials, with respect to a specified
-//  set * of variables `vars`. * A polynomial can be represented as * ∑ᵢ c(i) *
-//  m(i) * where m(i) is a monomial in the specified set of variables, and c(i)
-//  is the * corresponding coefficient. * Note the coefficient will include any
-//  constants and symbols not in the set of * variables. * <pre> * Example: *
-//  For polynomial e1 = 2x²y + 3xy²z + 4z * Decompose(e1, {x,y,z}) will return
-//  the map * map[x²y] = 2 * map[xy²z] = 3 * map[z] = 4 * on the other hand,
-//  Decompose(e1, {x,y}) (notice z is not included in the * input argument) will
-//  return the map * map[x²y] = 2 * map[xy²] = 3z * map[1] = 4z * </pre> *
-//  @pre{e.is_polynomial() returns true} * @param e The polynomial to be
-//  decomposed. Throw a runtime error if `e` is not * a polynomial. * @param
-//  vars The variables whose monomials will be considered in the *
-//  decomposition. * @retval monomial_to_coeff_map Map the monomial to the
-//  coefficient in each * term of the polynomial.
-//  */
-// MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
-//     const Expression& e, const Variables& vars);
-
-// /**
-//  * Decomposes a polynomial as the summation of coefficients multiply
-//  monomials, * w.r.t all variables in the polynomial. * For polynomial e1 =
-//  2x²y + 3xy²z + 4z * Decompose(e1, {x,y,z}) will return the map * map[x²y] =
-//  2 * map[xy²z] = 3 * map[z] = 4 * @param e A polynomial. Throws a runtime
-//  error if `e` is not a polynomial. * @pre{e.is_polynomial() returns true.} *
-//  @return map. The key of the map is the monomial, with the value being the *
-//  coefficient.
-//  */
-// MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
-//     const Expression& e);
-
-// /**
-//  * Maps a monomial to a coefficient. This map can be used to represent a
-//  * polynomial, such that the polynomial is
-//  *   ∑ map[key] * key
-//  * Compared to MonomialAsExpressionToCoefficientMap, using Monomial as the
-//  key * type should be faster than using the Expression as the key type.
-//  */
-// typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
-//     MonomialToCoefficientMap;
-
-// /**
-//  * Decomposes a polynomial into monomial and its coefficient. Throws a
-//  runtime * error if the expression is not a polynomial. * @see
-//  DecomposePolynomialIntoExpression(); * Using MonomialToCoefficientMap is
-//  faster and more specific than using * MonomialAsExpressionToCoefficientMap,
-//  so prefer * DecomposePolynomialIntoMonomial to
-//  DecomposePolynomialIntoExpression when * speed is a concern.
-//  */
-// MonomialToCoefficientMap DecomposePolynomialIntoMonomial(const Expression& e,
-//                                                          const Variables&
-//                                                          vars);
 
 }  // namespace symbolic
 }  // namespace drake
