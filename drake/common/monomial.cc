@@ -1,18 +1,12 @@
 #include "drake/common/monomial.h"
 
-#include <algorithm>
 #include <map>
-#include <memory>
+#include <numeric>
 #include <stdexcept>
-#include <unordered_map>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_expression_cell.h"
-#include "drake/common/symbolic_expression_visitor.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -25,8 +19,6 @@ using std::ostringstream;
 using std::out_of_range;
 using std::pair;
 using std::runtime_error;
-using std::shared_ptr;
-using std::unordered_map;
 
 namespace {
 // Computes the total degree of a monomial. This method is used in a
@@ -118,6 +110,14 @@ size_t Monomial::GetHash() const {
   // data-member of Monomial class while another data-member, total_degree_ is
   // determined by a given powers_.
   return hash_value<map<Variable, int>>{}(powers_);
+}
+
+Variables Monomial::GetVariables() const {
+  Variables vars{};
+  for (const pair<Variable, int> p : powers_) {
+    vars += p.first;
+  }
+  return vars;
 }
 
 bool Monomial::operator==(const Monomial& m) const {
@@ -240,12 +240,23 @@ Monomial& Monomial::pow_in_place(const int p) {
   return *this;
 }
 
-std::ostream& operator<<(std::ostream& out, const Monomial& m) {
-  out << "{";
-  for (const auto& power : m.powers_) {
-    out << "(" << power.first << ", " << power.second << ") ";
+ostream& operator<<(ostream& out, const Monomial& m) {
+  if (m.powers_.empty()) {
+    return out << 1;
   }
-  return out << "}";
+  auto it = m.powers_.begin();
+  out << it->first;
+  if (it->second > 1) {
+    out << "^" << it->second;
+  }
+  for (++it; it != m.powers_.end(); ++it) {
+    out << " + ";
+    out << it->first;
+    if (it->second > 1) {
+      out << "^" << it->second;
+    }
+  }
+  return out;
 }
 
 Monomial operator*(Monomial m1, const Monomial& m2) {
