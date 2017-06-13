@@ -93,6 +93,7 @@ struct GradedReverseLexOrder {
   VariableOrder variable_order_;
 };
 
+namespace internal {
 /** Generates [b * m for m in MonomialBasis(vars, degree)] and push them to
  * bin. Used as a helper function to implement MonomialBasis.
  *
@@ -143,6 +144,7 @@ Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(const Variables& vars,
   }
   return basis;
 }
+}  // namespace internal
 
 /**
  * Returns the total degrees of the polynomial @p e w.r.t the variables in @p
@@ -200,7 +202,8 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
   static_assert(n > 0, "n should be a positive integer.");
   static_assert(degree >= 0, "degree should be a non-negative integer.");
   DRAKE_ASSERT(vars.size() == n);
-  return ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars, degree);
+  return internal::ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars,
+                                                                      degree);
 }
 
 }  // namespace symbolic

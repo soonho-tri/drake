@@ -48,14 +48,15 @@ class Polynomial {
 
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
+  Polynomial& operator+=(double c);
 
   Polynomial& operator-=(const Polynomial& p);
   Polynomial& operator-=(const Monomial& m);
+  Polynomial& operator-=(double c);
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
-
-  Polynomial& operator*=(int n);
+  Polynomial& operator*=(double c);
 
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
@@ -66,7 +67,7 @@ class Polynomial {
 
  private:
   /// Add (coeff * m) to this polynomial.
-  Polynomial& Add(const double coeff, const Monomial& m);
+  Polynomial& Add(const Expression& coeff, const Monomial& m);
 
   /// Checks the invariants.
   void CheckInvariant() const;
@@ -82,17 +83,21 @@ Polynomial operator+(Polynomial p1, const Polynomial& p2);
 Polynomial operator+(Polynomial p, const Monomial& m);
 Polynomial operator+(const Monomial& m, Polynomial p);
 Polynomial operator+(const Monomial& m1, const Monomial& m2);
+Polynomial operator+(Polynomial p, double c);
+Polynomial operator+(double c, Polynomial p);
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2);
 Polynomial operator-(Polynomial p, const Monomial& m);
 Polynomial operator-(const Monomial& m, Polynomial p);
 Polynomial operator-(const Monomial& m1, const Monomial& m2);
+Polynomial operator-(Polynomial p, double c);
+Polynomial operator-(double c, Polynomial p);
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(const Monomial& m, Polynomial p);
-Polynomial operator*(int n, Polynomial p);
-Polynomial operator*(Polynomial p, int n);
+Polynomial operator*(double c, Polynomial p);
+Polynomial operator*(Polynomial p, double c);
 
 /// Returns polynomial @p rasied to @p n.
 Polynomial pow(Polynomial p, int n);

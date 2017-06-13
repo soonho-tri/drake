@@ -86,7 +86,7 @@ int Degree(const Expression& e) { return Degree(e, e.GetVariables()); }
 
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> MonomialBasis(const Variables& vars,
                                                          const int degree) {
-  return ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
+  return internal::ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
 
 }  // namespace symbolic

@@ -250,7 +250,7 @@ ostream& operator<<(ostream& out, const Monomial& m) {
     out << "^" << it->second;
   }
   for (++it; it != m.powers_.end(); ++it) {
-    out << " + ";
+    out << " * ";
     out << it->first;
     if (it->second > 1) {
       out << "^" << it->second;

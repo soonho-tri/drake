@@ -192,9 +192,10 @@ Expression Polynomial::ToExpression() const {
 Polynomial& Polynomial::operator+=(const Polynomial& p) {
   // indeterminates_ = indeterminates_ ∪ p.indeterminates_.
   indeterminates_ += p.indeterminates_;
-  for (const pair<Monomial, Expression>& p : p.monomial_to_coefficient_map_) {
-    const Monomial& m{p.first};
-    const Expression& coeff{p.second};
+  for (const pair<Monomial, Expression>& item :
+       p.monomial_to_coefficient_map_) {
+    const Monomial& m{item.first};
+    const Expression& coeff{item.second};
     auto it = monomial_to_coefficient_map_.find(m);
     if (it == monomial_to_coefficient_map_.end()) {
       // The entry, coeff * m in p, does not exist in this polynomial. Add it.
@@ -216,12 +217,20 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator+=(const Monomial& m) { return Add(1.0, m); }
 
+Polynomial& Polynomial::operator+=(const double c) {
+  return Add(c, Monomial{});
+}
+
 Polynomial& Polynomial::operator-=(const Polynomial& p) {
   *this += -p;
   return *this;
 }
 
 Polynomial& Polynomial::operator-=(const Monomial& m) { return Add(-1.0, m); }
+
+Polynomial& Polynomial::operator-=(const double c) {
+  return Add(-c, Monomial{});
+}
 
 Polynomial& Polynomial::operator*=(const Polynomial& p) {
   // (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * (c₂₁ * m₂₁ + ... + c₂ₘ * m₂ₘ)
@@ -250,10 +259,10 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
   return *this;
 }
 
-Polynomial& Polynomial::operator*=(const int n) {
+Polynomial& Polynomial::operator*=(const double c) {
   for (pair<const Monomial, Expression>& p : monomial_to_coefficient_map_) {
     Expression& coeff{p.second};
-    coeff *= n;
+    coeff *= c;
   }
   return *this;
 }
@@ -278,7 +287,7 @@ Formula Polynomial::operator==(Polynomial p) const {
   return ret;
 }
 
-Polynomial& Polynomial::Add(const double coeff, const Monomial& m) {
+Polynomial& Polynomial::Add(const Expression& coeff, const Monomial& m) {
   auto it = monomial_to_coefficient_map_.find(m);
   if (it == monomial_to_coefficient_map_.end()) {
     // m is not in this polynomial. Add it.
@@ -330,6 +339,8 @@ Polynomial operator+(const Monomial& m, Polynomial p) { return p += m; }
 Polynomial operator+(const Monomial& m1, const Monomial& m2) {
   return Polynomial(m1) + m2;
 }
+Polynomial operator+(Polynomial p, const double c) { return p += c; }
+Polynomial operator+(const double c, Polynomial p) { return p += c; }
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
@@ -340,12 +351,14 @@ Polynomial operator-(const Monomial& m, Polynomial p) {
 Polynomial operator-(const Monomial& m1, const Monomial& m2) {
   return Polynomial(m1) - m2;
 }
+Polynomial operator-(Polynomial p, const double c) { return p -= c; }
+Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
-Polynomial operator*(int n, Polynomial p) { return p *= n; }
-Polynomial operator*(Polynomial p, int n) { return p *= n; }
+Polynomial operator*(const double c, Polynomial p) { return p *= c; }
+Polynomial operator*(Polynomial p, const double c) { return p *= c; }
 
 Polynomial pow(Polynomial p, int n) {
   // TODO(soonho-tri): Optimize this by not relying on ToExpression() method.
