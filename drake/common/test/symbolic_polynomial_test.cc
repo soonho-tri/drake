@@ -71,7 +71,12 @@ TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
   }
 }
 
-TEST_F(SymbolicPolynomialTest, Addition) {
+TEST_F(SymbolicPolynomialTest, IndeterminatesDecisionVariables) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator+(Polynomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, AdditionPolynomial) {
   //   (Polynomial(e₁) + Polynomial(e₂)).ToExpression()
   // = e₁.Expand() + e₂.Expand()
   for (const Expression& e1 : exprs_) {
@@ -82,7 +87,51 @@ TEST_F(SymbolicPolynomialTest, Addition) {
   }
 }
 
-TEST_F(SymbolicPolynomialTest, Subtraction) {
+// Checks operator+(Polynomial, Monomial) and operator+(Monomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, AdditionMonomial) {
+  // TODO(soonho-tri): add here.
+
+  //   (Polynomial(e) + m).ToExpression()
+  // = e.Expand() + m.ToExpression()
+
+  //   (m + Polynomial(e) ).ToExpression()
+  // = m.ToExpression() + e.Expand()
+}
+
+// Checks operator+(Polynomial, double) and operator+(double, Polynomial).
+TEST_F(SymbolicPolynomialTest, AdditionDouble) {
+  // TODO(soonho-tri): add here.
+
+  //   (Polynomial(e) + c).ToExpression()
+  // = e.Expand() + c
+
+  //   (c + Polynomial(e) ).ToExpression()
+  // = c + e.Expand()
+}
+
+// Checks operator+=(Polynomial).
+TEST_F(SymbolicPolynomialTest, AdditionAssignPolynomial) {
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      Polynomial p1{e1};
+      p1 += Polynomial{e2};
+      EXPECT_PRED2(ExprEqual, p1.ToExpression(), e1.Expand() + e2.Expand());
+    }
+  }
+}
+
+// Checks operator+=(Monomial).
+TEST_F(SymbolicPolynomialTest, AdditionAssignMonomial) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator+=(double).
+TEST_F(SymbolicPolynomialTest, AdditionAssignDouble) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator-(Polynomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, SubtractionPolynomial) {
   //   (Polynomial(e₁) - Polynomial(e₂)).ToExpression()
   // = e₁.Expand() - e₂.Expand()
   for (const Expression& e1 : exprs_) {
@@ -93,7 +142,39 @@ TEST_F(SymbolicPolynomialTest, Subtraction) {
   }
 }
 
-TEST_F(SymbolicPolynomialTest, Multiplication) {
+// Checks operator-(Polynomial, Monomial) and operator-(Monomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, SubtractionMonomial) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator-(Polynomial, double) and operator-(double, Polynomial).
+TEST_F(SymbolicPolynomialTest, SubtractionDouble) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator-=(Polynomial).
+TEST_F(SymbolicPolynomialTest, SubtractionAssignPolynomial) {
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      Polynomial p1{e1};
+      p1 -= Polynomial{e2};
+      EXPECT_PRED2(ExprEqual, p1.ToExpression(), e1.Expand() - e2.Expand());
+    }
+  }
+}
+
+// Checks operator-=(Monomial).
+TEST_F(SymbolicPolynomialTest, SubtractionAssignMonomial) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator-=(double).
+TEST_F(SymbolicPolynomialTest, SubtractionAssignDouble) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator*(Polynomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, MultiplicationPolynomial) {
   //   (Polynomial(e₁) * Polynomial(e₂)).ToExpression()
   // = (e₁.Expand() * e₂.Expand()).Expand()
   for (const Expression& e1 : exprs_) {
@@ -102,6 +183,66 @@ TEST_F(SymbolicPolynomialTest, Multiplication) {
                    (e1.Expand() * e2.Expand()).Expand());
     }
   }
+}
+
+// Checks operator*(Polynomial, Monomial) and operator*(Monomial, Polynomial).
+TEST_F(SymbolicPolynomialTest, MultiplicationMonomial) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator*(Polynomial, double) and operator*(double, Polynomial).
+TEST_F(SymbolicPolynomialTest, MultiplicationDouble) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator*=(Polynomial).
+TEST_F(SymbolicPolynomialTest, MultiplicationAssignPolynomial) {
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      Polynomial p1{e1};
+      p1 *= Polynomial{e2};
+      EXPECT_PRED2(ExprEqual, p1.ToExpression(),
+                   (e1.Expand() * e2.Expand()).Expand());
+    }
+  }
+}
+
+// Checks operator*=(Monomial).
+TEST_F(SymbolicPolynomialTest, MultiplicationAssignMonomial) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks operator*=(double).
+TEST_F(SymbolicPolynomialTest, MultiplicationAssignDouble) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks Polynomial::EqualTo(Polynomial p).
+TEST_F(SymbolicPolynomialTest, EqualTo) {
+  // e₁.Expand() is structurally equal to e₂.Expand() if and only if
+  // Polynomial(e₁) is structurally equal to Polynomial(e₂).
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      const bool expr_equal{e1.Expand().EqualTo(e2.Expand())};
+      const bool poly_equal{Polynomial{e1}.EqualTo(Polynomial{e2})};
+      EXPECT_EQ(expr_equal, poly_equal);
+    }
+  }
+}
+
+// Checks Polynomial::operator==(Polynomial p).
+TEST_F(SymbolicPolynomialTest, Equality) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks unary minus, operator-(Polynomial).
+TEST_F(SymbolicPolynomialTest, UnaryMinus) {
+  // TODO(soonho-tri): add here.
+}
+
+// Checks unary minus, operator-(Polynomial).
+TEST_F(SymbolicPolynomialTest, Pow) {
+  // TODO(soonho-tri): add here.
 }
 
 }  // namespace

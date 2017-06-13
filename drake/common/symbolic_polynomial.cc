@@ -291,7 +291,6 @@ Polynomial& Polynomial::operator*=(const double c) {
 }
 
 bool Polynomial::EqualTo(const Polynomial& p) const {
-  // TODO(soonho): make sure if this is enough.
   return monomial_to_coefficient_map_ == p.monomial_to_coefficient_map();
 }
 
