@@ -1,3 +1,9 @@
+add_executable(executable
+        executable.cc)
+target_link_libraries(executable
+        drakeOptimization
+        drakeCommon)
+
 if(gurobi_FOUND)
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
   target_link_libraries(drakeQP
