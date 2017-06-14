@@ -672,6 +672,11 @@ MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& poly) {
   return make_pair(psd_binding, leq_binding);
 }
 
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
+  return AddSosConstraint(symbolic::Polynomial{e});
+}
+
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
