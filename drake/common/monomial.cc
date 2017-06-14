@@ -221,10 +221,6 @@ Monomial& Monomial::operator*=(const Monomial& m) {
   return *this;
 }
 
-Monomial& Monomial::operator*=(const Variable& v) {
-  return *this *= Monomial{v};
-}
-
 Monomial& Monomial::pow_in_place(const int p) {
   if (p < 0) {
     ostringstream oss;
@@ -267,10 +263,6 @@ Monomial operator*(Monomial m1, const Monomial& m2) {
   m1 *= m2;
   return m1;
 }
-
-Monomial operator*(Monomial m, const Variable& v) { return m *= v; }
-
-Monomial operator*(const Variable& v, Monomial m) { return m *= v; }
 
 Monomial pow(Monomial m, const int p) { return m.pow_in_place(p); }
 

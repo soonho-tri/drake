@@ -66,7 +66,6 @@ class Polynomial {
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
-  Polynomial& operator*=(const Variable& v);
   Polynomial& operator*=(double c);
 
   /// Returns true if this polynomial and @p p are structurally equal.
@@ -108,8 +107,6 @@ Polynomial operator-(double c, Polynomial p);
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(const Monomial& m, Polynomial p);
-Polynomial operator*(Polynomial p, const Variable& v);
-Polynomial operator*(const Variable& v, Polynomial p);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(Polynomial p, double c);
 
@@ -117,32 +114,6 @@ Polynomial operator*(Polynomial p, double c);
 Polynomial pow(Polynomial p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
-
-// Matrix<Variable> * Matrix<Monomial> => Matrix<Polynomial>
-template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Variable>::value &&
-        std::is_same<typename MatrixR::Scalar, Monomial>::value,
-    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
-operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
-}
-
-// Matrix<Monomial> * Matrix<Variable> => Matrix<Polynomial>
-template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Monomial>::value &&
-        std::is_same<typename MatrixR::Scalar, Variable>::value,
-    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
-operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
-}
 
 // Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
 template <typename MatrixL, typename MatrixR>

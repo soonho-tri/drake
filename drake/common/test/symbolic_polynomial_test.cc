@@ -113,15 +113,15 @@ TEST_F(SymbolicPolynomialTest, Multiplication) {
 TEST_F(SymbolicPolynomialTest, SOSTest) {
   // X = MonomialBasis({x}, 2) = {x², x, 1}.
   const drake::VectorX<Monomial> X{MonomialBasis({var_x_}, 2)};
-  // Set up Q. You can do this by using
-  // MathematicalProgram::NewSymmetricContinuousVariables.
-  Eigen::Matrix<Variable, 3, 3> Q;
+  // Set up Q.
+  Eigen::Matrix<Monomial, 3, 3> Q;
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
-      Q(i, j) = Variable("q_" + to_string(i) + "_" + to_string(j));
+      const Variable q_i_j{"q_" + to_string(i) + "_" + to_string(j)};
+      Q(i, j) = Monomial {}
     }
   }
-  const Polynomial p = (X.transpose() * Q * X)(0);
+  // const Polynomial p = (X.transpose() * Q * X)(0);
 }
 
 }  // namespace
