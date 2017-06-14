@@ -1915,6 +1915,14 @@ class MathematicalProgram {
             Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& poly);
 
+  /**
+   * Adds a sums-of-squares (SOS) constraint to the program.
+   * TODO(FischerGundlach): please fix this documentation when you fix above.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Expression& e);
+
   // template <typename FunctionType>
   // void AddCost(std::function..);
   // void AddLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
