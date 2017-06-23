@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_variables.h"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic_variable.h"
@@ -17,6 +18,22 @@ class VariablesTest : public ::testing::Test {
   const Variable w_{"w"};
   const Variable v_{"v"};
 };
+
+TEST_F(VariablesTest, ConversionFunction) {
+  const Eigen::Matrix<symbolic::Variable, 3, 1> A1(x_, y_, z_);
+  const Variables vars1(A1);
+  EXPECT_EQ(vars1.size(), 3u);
+  EXPECT_TRUE(vars1.include(x_));
+  EXPECT_TRUE(vars1.include(y_));
+  EXPECT_TRUE(vars1.include(z_));
+
+  const Eigen::Matrix<symbolic::Variable, 3, 1> A2(x_, x_, y_);
+  const Variables vars2(A2);
+  EXPECT_EQ(vars2.size(), 2u);
+  EXPECT_TRUE(vars2.include(x_));
+  EXPECT_TRUE(vars2.include(y_));
+  EXPECT_FALSE(vars2.include(z_));
+}
 
 TEST_F(VariablesTest, HashEq) {
   const Variables vars1{x_, y_, z_};
