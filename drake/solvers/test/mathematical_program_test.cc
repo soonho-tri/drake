@@ -51,6 +51,7 @@ using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
+using drake::symbolic::Variables;
 using drake::symbolic::test::ExprEqual;
 
 using std::all_of;
@@ -183,6 +184,39 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
   }
 }
 
+void CheckNewFreePolynomial(symbolic::Polynomial& poly, Variables& vars_indet,
+                            int& degree, Variables& vars_decision) {
+  const drake::VectorX<symbolic::Monomial> monomial_basis{
+      symbolic::MonomialBasis(vars_indet, degree)};
+
+  // check degree of created polynomial
+  EXPECT_EQ(poly.Degree(), degree);
+
+  // Size of poly::mononomial_to_coefficient_map_ should be the same as of
+  // monomial_basis.
+  EXPECT_EQ(poly.monomial_to_coefficient_map().size(), monomial_basis.size());
+  // Size of poly::mononomial_to_coefficient_map_ should be the same as of
+  // vars_decision
+  EXPECT_EQ(poly.monomial_to_coefficient_map().size(), vars_decision.size());
+
+  // check correct assignment of indeterminates & decision variables
+  EXPECT_EQ(poly.indeterminates(), vars_indet);
+  // TODO(fischergundlach) Is set<Variable> independent of order of insertion?
+  EXPECT_EQ(poly.decision_variables(), vars_decision);
+
+  for (const auto& m : poly.monomial_to_coefficient_map()) {
+    // checks that every element in monomial_to_coefficient_map_.second has
+    // EXACTLY 1 decision variable
+    EXPECT_EQ(m.second.GetVariables().size(), 1);
+    // only decision variables should be in monomial_to_coefficient_map_.second
+    EXPECT_TRUE(m.second - Variable(*m.second.GetVariables().begin()) == 0);
+  }
+
+  // TODO(fischergundlach) Check of elements in
+  // monomial_to_coefficient_map.First are permutation of elements in
+  // monomial_basis.
+}
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
@@ -283,6 +317,58 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
                 "wrong type");
   CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
                      MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testNewFreePolynomial, testNewFreePolynomial1) {
+  MathematicalProgram prog;
+  auto x_indet = prog.NewIndeterminates(1, "x");
+  Variables vars_indet{x_indet};
+  int degree{1};
+
+  DRAKE_ASSERT(prog.decision_variables().size() == 0);
+  symbolic::Polynomial poly = prog.NewFreePolynomial(vars_indet, degree);
+  Variables vars_decision{poly.decision_variables()};
+
+  CheckNewFreePolynomial(poly, vars_indet, degree, vars_decision);
+}
+
+GTEST_TEST(testNewFreePolynomial, testNewFreePolynomial2) {
+  MathematicalProgram prog;
+  auto x_indet = prog.NewIndeterminates(1, "x");
+  Variables vars_indet{x_indet};
+  int degree{2};
+
+  DRAKE_ASSERT(prog.decision_variables().size() == 0);
+  symbolic::Polynomial poly = prog.NewFreePolynomial(vars_indet, degree);
+  Variables vars_decision{poly.decision_variables()};
+
+  CheckNewFreePolynomial(poly, vars_indet, degree, vars_decision);
+}
+
+GTEST_TEST(testNewFreePolynomial, testNewFreePolynomial3) {
+  MathematicalProgram prog;
+  auto x_indet = prog.NewIndeterminates(2, "x");
+  Variables vars_indet{x_indet};
+  int degree{1};
+
+  DRAKE_ASSERT(prog.decision_variables().size() == 0);
+  symbolic::Polynomial poly = prog.NewFreePolynomial(vars_indet, degree);
+  Variables vars_decision{poly.decision_variables()};
+
+  CheckNewFreePolynomial(poly, vars_indet, degree, vars_decision);
+}
+
+GTEST_TEST(testNewFreePolynomial, testNewFreePolynomial4) {
+  MathematicalProgram prog;
+  auto x_indet = prog.NewIndeterminates(2, "x");
+  Variables vars_indet{x_indet};
+  int degree{2};
+
+  DRAKE_ASSERT(prog.decision_variables().size() == 0);
+  symbolic::Polynomial poly = prog.NewFreePolynomial(vars_indet, degree);
+  Variables vars_decision{poly.decision_variables()};
+
+  CheckNewFreePolynomial(poly, vars_indet, degree, vars_decision);
 }
 
 GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {

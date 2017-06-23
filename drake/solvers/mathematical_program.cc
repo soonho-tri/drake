@@ -208,18 +208,19 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
-drake::symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
     const Variables& indeterminates, const int degree) {
-  const drake::VectorX<symbolic::Monomial> x{
+  const drake::VectorX<symbolic::Monomial> m{
       MonomialBasis(indeterminates, degree)};
-  const VectorXDecisionVariable coeffs{NewContinuousVariables(x.size())};
+  const VectorXDecisionVariable coeffs{NewContinuousVariables(m.size())};
 
   // TODO(soonho): make coeffs.dot(X) work.
-  symbolic::Polynomial p;
-  for (int i = 0; i < x.size(); ++i) {
-    p += x(i) * coeffs(i);
+  symbolic::Polynomial::MapType p_map;
+  for (int i = 0; i < m.size(); ++i) {
+    p_map.emplace(m(i), coeffs(i));
   }
-  return p;
+
+  return symbolic::Polynomial{p_map};;
 }
 
 pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>

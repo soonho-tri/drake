@@ -88,14 +88,23 @@ TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
   for (int i = 0; i < monomials_.size(); ++i) {
-    const Monomial& x{monomials_[i]};
-    const Polynomial p{x};
+    const Polynomial p{monomials_[i]};
     for (const std::pair<Monomial, Expression>& map :
          p.monomial_to_coefficient_map()) {
-      EXPECT_EQ(map.first, x);
+      EXPECT_EQ(map.first, monomials_[i]);
       EXPECT_EQ(map.second, 1);
     }
   }
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructFromMapType) {
+  Polynomial::MapType p_map;
+  for (int i = 0; i < monomials_.size(); ++i) {
+    p_map.emplace(monomials_[i], 1);
+  }
+  Polynomial p{p_map};
+
+  EXPECT_EQ(p.monomial_to_coefficient_map(), p_map);
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromExpressionWithIndeterminates) {

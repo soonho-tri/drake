@@ -180,6 +180,9 @@ Polynomial::Polynomial(const Monomial& m)
   DRAKE_ASSERT(decision_variables().empty());
 }
 
+Polynomial::Polynomial(const MapType& init)
+    : monomial_to_coefficient_map_{init} {};
+
 Polynomial::Polynomial(const Expression& e, const Variables& indeterminates)
     : monomial_to_coefficient_map_{
           DecomposePolynomialVisitor{}.Decompose(e, indeterminates)} {

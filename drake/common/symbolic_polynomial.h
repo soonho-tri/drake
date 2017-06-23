@@ -34,6 +34,10 @@ class Polynomial {
   /// in `m` are considered as indeterminates.
   explicit Polynomial(const Monomial& m);
 
+  /// Construct a polynomial from a std::unordered_map<Monomial, Expression,
+  /// hash_value<Monomial>>
+  explicit Polynomial(const MapType& init);
+
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
   Polynomial(const Expression& e, const Variables& indeterminates);
