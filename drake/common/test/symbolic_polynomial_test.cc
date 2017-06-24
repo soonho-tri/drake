@@ -25,10 +25,13 @@ class SymbolicPolynomialTest : public ::testing::Test {
   const Variable var_z_{"z"};
   const Variables var_xy_{var_x_, var_y_};
   const Variables var_xyz_{var_x_, var_y_, var_z_};
+  const drake::VectorX<symbolic::Monomial> monomials_{
+      MonomialBasis(var_xyz_, 3)};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
-
+  const Expression xy_{var_x_ + var_y_};
+  const Expression xyz_{var_x_ + var_y_ + var_z_};
   const vector<Expression> exprs_{
       0,
       -1,
@@ -72,7 +75,75 @@ TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
     const Expression expanded_expr{e.Expand()};
     const Expression expr_from_poly{p.ToExpression()};
     EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_poly);
+
+    Variables vars;
+    for (const std::pair<Monomial, Expression>& map :
+         p.monomial_to_coefficient_map()) {
+      const Monomial& m_i{map.first};
+      vars += m_i.GetVariables();
+    }
+    EXPECT_EQ(vars, e.Expand().GetVariables());
   }
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& x{monomials_[i]};
+    const Polynomial p{x};
+    for (const std::pair<Monomial, Expression>& map :
+         p.monomial_to_coefficient_map()) {
+      EXPECT_EQ(map.first, x);
+      EXPECT_EQ(map.second, 1);
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructFromExpressionWithIndeterminates) {
+  const Polynomial p_0{xy_, Variables{var_x_}};
+  Variables vars_in_monomial_0;
+  Variables vars_in_expression_0;
+  for (const std::pair<Monomial, Expression>& map :
+       p_0.monomial_to_coefficient_map()) {
+    vars_in_monomial_0 += map.first.GetVariables();
+    vars_in_expression_0 += map.second.Expand().GetVariables();
+  }
+  EXPECT_EQ(vars_in_monomial_0, Variables{var_x_});
+  EXPECT_EQ(vars_in_expression_0, Variables{var_y_});
+
+  const Polynomial p_1{xyz_, Variables{var_xy_}};
+  Variables vars_in_monomial_1;
+  Variables vars_in_expression_1;
+  for (const std::pair<Monomial, Expression>& map :
+       p_1.monomial_to_coefficient_map()) {
+    vars_in_monomial_1 += map.first.GetVariables();
+    vars_in_expression_1 += map.second.Expand().GetVariables();
+  }
+  EXPECT_EQ(vars_in_monomial_1, Variables{var_xy_});
+  EXPECT_EQ(vars_in_expression_1, Variables{var_z_});
+}
+
+TEST_F(SymbolicPolynomialTest, GetterIndeterminates) {
+  for (const Expression& e : exprs_) {
+    const Polynomial p_0{e};
+    EXPECT_EQ(p_0.indeterminates(), e.Expand().GetVariables());
+  }
+
+  const Polynomial p_1{xy_, Variables{var_x_}};
+  EXPECT_EQ(p_1.indeterminates(), Variables{var_x_});
+  const Polynomial p_2{xyz_, var_xy_};
+  EXPECT_EQ(p_2.indeterminates(), var_xy_);
+}
+
+TEST_F(SymbolicPolynomialTest, GetterDecisionVariables) {
+  for (const Expression& e : exprs_) {
+    const Polynomial p_0{e};
+    EXPECT_EQ(p_0.decision_variables(), Variables());
+  }
+
+  const Polynomial p_1{xyz_, var_xy_};
+  EXPECT_EQ(p_1.decision_variables(), Variables{var_z_});
+  const Polynomial p_2{xyz_, Variables{var_z_}};
+  EXPECT_EQ(p_2.decision_variables(), var_xy_);
 }
 
 TEST_F(SymbolicPolynomialTest, Addition) {
@@ -84,6 +155,8 @@ TEST_F(SymbolicPolynomialTest, Addition) {
                    e1.Expand() + e2.Expand());
     }
   }
+  // No need to test Polynomial operator+(Polynomial p, const Monomial& m) as
+  // TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) is passed.
 }
 
 TEST_F(SymbolicPolynomialTest, Subtraction) {
@@ -95,6 +168,8 @@ TEST_F(SymbolicPolynomialTest, Subtraction) {
                    e1.Expand() - e2.Expand());
     }
   }
+  // No need to test Polynomial operator-(Polynomial p, const Monomial& m) as
+  // TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) is passed.
 }
 
 TEST_F(SymbolicPolynomialTest, Multiplication) {

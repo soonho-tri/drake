@@ -7,6 +7,8 @@
 #include <set>
 #include <string>
 
+#include <Eigen/Core>
+
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -27,6 +29,9 @@ class Variables {
 
   typedef typename drake::symbolic::Variable key_type;
   typedef typename drake::symbolic::Variable value_type;
+  typedef
+      typename Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, Eigen::Dynamic>
+          MatrixXVariable;
   typedef typename std::set<key_type> set;
   typedef typename set::size_type size_type;
   typedef typename set::iterator iterator;
@@ -39,6 +44,9 @@ class Variables {
 
   /** List constructor. */
   Variables(std::initializer_list<value_type> init);
+
+  /** Creator from Eigen::Matrix<symbolic::Variable>.*/
+  Variables(MatrixXVariable init);
 
   /** Returns hash value. */
   size_t get_hash() const;

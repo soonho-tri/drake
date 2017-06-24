@@ -21,6 +21,12 @@ namespace symbolic {
 
 Variables::Variables(std::initializer_list<value_type> init) : vars_(init) {}
 
+Variables::Variables(MatrixXVariable init) {
+  for (int i = 0; i < init.size(); ++i) {
+    this->insert(init(i));
+  }
+}
+
 size_t Variables::get_hash() const { return hash_value<set>{}(vars_); }
 
 string Variables::to_string() const {
