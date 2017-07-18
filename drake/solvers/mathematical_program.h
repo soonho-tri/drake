@@ -191,14 +191,14 @@ enum ProgramAttributes {
 };
 typedef uint32_t AttributesSet;
 
-template<int ...>
+template <int...>
 struct NewVariableNames {};
 /**
-   * The type of the names for the newly added variables.
-   * @tparam Size If Size is a fixed non-negative integer, then the type of the
-   * name is std::array<std::string, Size>. Otherwise the type is
-   * std::vector<std::string>.
-   */
+ * The type of the names for the newly added variables.
+ * @tparam Size If Size is a fixed non-negative integer, then the type of the
+ * name is std::array<std::string, Size>. Otherwise the type is
+ * std::vector<std::string>.
+ */
 template <int Size>
 struct NewVariableNames<Size> {
   typedef std::array<std::string, Size> type;
@@ -223,7 +223,7 @@ namespace internal {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if< Size >= 0, typename NewVariableNames<Size>::type>::type
+typename std::enable_if<Size >= 0, typename NewVariableNames<Size>::type>::type
 CreateNewVariableNames(int) {
   typename NewVariableNames<Size>::type names;
   return names;
@@ -304,7 +304,6 @@ class MathematicalProgram {
     return NewContinuousVariables<Eigen::Dynamic, 1>(rows, 1, name);
   }
 
-
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
@@ -337,10 +336,10 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
-    rows = Rows == Eigen::Dynamic? rows : Rows;
-    cols = Cols == Eigen::Dynamic? cols : Cols;
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
+    rows = Rows == Eigen::Dynamic ? rows : Rows;
+    cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
         internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
             rows * cols);
@@ -407,8 +406,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -1854,14 +1853,12 @@ class MathematicalProgram {
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       double option_value) {
+                       const std::string& solver_option, double option_value) {
     solver_options_double_[solver_id][solver_option] = option_value;
   }
 
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       int option_value) {
+                       const std::string& solver_option, int option_value) {
     solver_options_int_[solver_id][solver_option] = option_value;
   }
 
@@ -1889,17 +1886,13 @@ class MathematicalProgram {
   /**
    * Sets the ID of the solver that was used to solve this program.
    */
-  void SetSolverId(SolverId solver_id) {
-    solver_id_ = solver_id;
-  }
+  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
 
   /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  optional<SolverId> GetSolverId() const {
-    return solver_id_;
-  }
+  optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2353,8 +2346,7 @@ class MathematicalProgram {
    */
   template <int Rows>
   MatrixDecisionVariable<Rows, Rows> NewSymmetricVariables(
-      VarType type,
-      const typename NewSymmetricVariableNames<Rows>::type& names,
+      VarType type, const typename NewSymmetricVariableNames<Rows>::type& names,
       int rows = Rows) {
     MatrixDecisionVariable<Rows, Rows> decision_variable_matrix(rows, rows);
     NewVariables_impl(type, names, true, decision_variable_matrix);
