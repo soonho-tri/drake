@@ -8,7 +8,7 @@
 /// Many symbolic types are not closed under the defined operations. For
 /// example, relational operations (i.e. <) over symbolic::Expression produce
 /// symbolic::Formula. Another example is addition (+) over Monomial which gives
-/// Polynomial. If a user does not include a necessary set of header files,
+/// Polynomial. If a user does not include the necessary set of header files,
 /// he/she will get either 1) incomprehensible c++ errors or 2) undefined
 /// runtime behaviors. The problem is trickier if we use symbolic objects via
 /// Eigen.
@@ -23,8 +23,9 @@
 //
 // Rationale: We want to maximize the use of this header, `symbolic.h`, even
 // inside of the symbolic library files to avoid any mistakes which might not be
-// detected. By centralizing the list here, we know that everyone will see the
-// same order, so we are shielded from triggering undefined behaviors due to
+// detected. By centralizing the list here, we make sure that everyone will see
+// the correct order which respects the inter-dependencies of the symbolic
+// headers. This shields us from triggering undefined behaviors due to
 // order-of-specialization-includes-changed mistakes.
 //
 // clang-format off

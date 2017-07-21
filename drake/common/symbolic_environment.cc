@@ -1,4 +1,6 @@
-// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
+// NOLINTNEXTLINE(build/include): Apparently missing include
+// (symbolic_environment.h) is granted style exception; it is included in
+// "symbolic.h" by design.
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
