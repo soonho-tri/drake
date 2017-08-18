@@ -86,7 +86,7 @@ void set(EigenPtr<MatrixXd> M, const int i, const int j, const double c) {
 }
 
 // Returns M(i, j).
-double get(const EigenPtr<const MatrixXd> M, const int i, const int j) {
+double get(EigenPtr<const MatrixXd> M, const int i, const int j) {
   return M->coeff(i, j);
 }
 
