@@ -227,12 +227,6 @@ struct is_eigen_nonvector_of
 /// pointers to Eigen objects as parameters while limiting the number of copies,
 /// similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
 /// and provides access to it via `operator*` and `operator->`.
-
-/// This wrapper class provides a way to write non-template functions taking
-/// raw pointers to Eigen objects as parameters while limiting the number of
-/// copies, similar to `Eigen::Ref`. Internally, it keeps an instance of
-/// `Eigen::Ref<T>` and provides access to it via `operator*` and
-/// `operator->`.
 ///
 /// The motivation of this class is to follow <a
 /// href="https://google.github.io/styleguide/cppguide.html#Reference_Arguments">GSG's
