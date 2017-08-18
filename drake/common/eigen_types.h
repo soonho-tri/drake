@@ -84,7 +84,7 @@ using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 /// columns, are allowed.
 template <typename Scalar>
 using MatrixUpTo6 =
-Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
 
 /// A quaternion templated on scalar type.
 template <typename Scalar>
@@ -200,9 +200,9 @@ struct is_eigen_vector
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_vector_of
-    : std::integral_constant<
-          bool, is_eigen_scalar_same<Derived, Scalar>::value &&
-                    is_eigen_vector<Derived>::value> {};
+    : std::integral_constant<bool,
+                             is_eigen_scalar_same<Derived, Scalar>::value &&
+                                 is_eigen_vector<Derived>::value> {};
 
 /*
  * Determines if a EigenBase<> type is a compile-time non-column-vector matrix
@@ -216,9 +216,9 @@ struct is_eigen_vector_of
 // becomes an issue.
 template <typename Derived, typename Scalar>
 struct is_eigen_nonvector_of
-    : std::integral_constant<
-          bool, is_eigen_scalar_same<Derived, Scalar>::value &&
-                    !is_eigen_vector<Derived>::value> {};
+    : std::integral_constant<bool,
+                             is_eigen_scalar_same<Derived, Scalar>::value &&
+                                 !is_eigen_vector<Derived>::value> {};
 
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
