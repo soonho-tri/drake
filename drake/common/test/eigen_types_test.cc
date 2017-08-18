@@ -6,14 +6,14 @@
 
 #include "drake/common/nice_type_name.h"
 
-using Eigen::MatrixXd;
-using Eigen::Matrix3d;
-using Eigen::VectorXd;
-using Eigen::Vector3d;
-using Eigen::ArrayXXd;
 using Eigen::Array33d;
-using Eigen::ArrayXd;
 using Eigen::Array3d;
+using Eigen::ArrayXXd;
+using Eigen::ArrayXd;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace {
@@ -43,23 +43,17 @@ GTEST_TEST(EigenTypesTest, TraitsPositive) {
 }
 
 // SFINAE check.
-bool IsEigen(...) {
-  return false;
-}
-template <typename T,
-          typename Cond = typename std::enable_if<
-              is_eigen_type<T>::value>::type>
+bool IsEigen(...) { return false; }
+template <typename T, typename Cond = typename std::enable_if<
+                          is_eigen_type<T>::value>::type>
 bool IsEigen(const T&) {
   return true;
 }
 
 // SFINAE check with edge case described below.
-bool IsEigenOfDouble(...) {
-  return false;
-}
-template <typename T,
-          typename Cond = typename std::enable_if<
-              is_eigen_scalar_same<T, double>::value>::type>
+bool IsEigenOfDouble(...) { return false; }
+template <typename T, typename Cond = typename std::enable_if<
+                          is_eigen_scalar_same<T, double>::value>::type>
 bool IsEigenOfDouble(const T&) {
   return true;
 }
