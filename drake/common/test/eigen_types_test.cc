@@ -108,5 +108,44 @@ GTEST_TEST(EigenTypesTest, EigenPtr) {
   set(&tmp, 0, 0, 1);  // tmp(0, 0) = 1. That is, M1(1, 1) = 1.
   EXPECT_EQ(get(&M1, 1, 1), 1);
 }
+
+GTEST_TEST(EigenTypesTest, EigenPtr_EigenRef) {
+  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 3);
+  Eigen::Ref<Eigen::MatrixXd> M_ref(M);
+
+  // Tests set.
+  set(&M_ref, 0, 0, 1);       // Sets M(0,0) = 1
+  EXPECT_EQ(M_ref(0, 0), 1);  // Checks M(0, 0) = 1
+
+  // Tests get.
+  EXPECT_EQ(get(&M_ref, 0, 0), 1);  // Checks M(0, 0) = 1
+}
+
+template <typename Derived>
+auto identity(EigenPtr<Derived> ptr) {
+  return ptr;
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_Id) {
+  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 3);
+  Eigen::Ref<MatrixXd> M_ref(M);
+  EigenPtr<MatrixXd> ptr =
+      identity(&M_ref);  // Will this complain about a type mismatch, that
+                         // EigenPtr<MatrixXd> != EigenPtr<Ref<MatrixXd>>?
+}
+
+// This test checks if we can mix static-size and dynamic-size matrices with
+// EigenPtr. It only checks the compilation of the code. There is no runtime
+// assertions.
+GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes) {
+  MatrixXd M(3, 3);
+  Eigen::Ref<Matrix3d> ref(M);
+  EigenPtr<Matrix3d> ptr(&M);
+
+  Eigen::Ref<MatrixXd> refX(ref);
+  // EigenPtr<MatrixXd> ptrX(ptr);
+  // THIS ONE DOES NOT WORK.
+  EigenPtr<MatrixXd> ptr_ref(&ref);
+}
 }  // namespace
 }  // namespace drake
