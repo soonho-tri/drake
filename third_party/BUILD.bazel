@@ -4,6 +4,11 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+py_library(
+    name = "extra_actions_proto_py",
+    srcs = ["com_github_bazelbuild_bazel/protos/extra_actions_base_pb2.py"],
+)
+
 exports_files(
     ["com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh"],
     visibility = [
