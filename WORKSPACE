@@ -239,33 +239,30 @@ github_archive(
 )
 
 # Necessary for buildifier.
-github_archive(
-    name = "io_bazel_rules_go",
-    repository = "bazelbuild/rules_go",
-    commit = "0.4.4",
-    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",  # noqa
+http_archive(
+    name = "io_bazel_rules_go",  # 0.5.5
+    strip_prefix = "rules_go-71cdb6fd5f887d215bdbe0e4d1eb137278b09c39",
+    urls = [
+        "http://mirror.bazel.build/github.com/bazelbuild/rules_go/archive/71cdb6fd5f887d215bdbe0e4d1eb137278b09c39.tar.gz",
+        "https://github.com/bazelbuild/rules_go/archive/71cdb6fd5f887d215bdbe0e4d1eb137278b09c39.tar.gz",
+    ],
 )
 
-# Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
+load(
+    "@io_bazel_rules_go//go:def.bzl",
+    "go_rules_dependencies",
+    "go_register_toolchains",
+    "go_repository",
+)
 
-# Necessary for buildifier.
-go_repositories()
+go_rules_dependencies()
 
-# Necessary for buildifier.
-new_go_repository(
+go_register_toolchains()
+
+go_repository(
     name = "org_golang_x_tools",
     commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
     importpath = "golang.org/x/tools",
-)
-
-github_archive(
-    name = "com_github_bazelbuild_buildtools",
-    repository = "bazelbuild/buildtools",
-    # TODO(mwoehlke-kitware): Bump this commit to a release tag once it is
-    # incorporated in a released version.
-    commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
-    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",  # noqa
 )
 
 github_archive(
