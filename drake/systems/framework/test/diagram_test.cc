@@ -41,8 +41,8 @@ class DoubleOnlySystem : public LeafSystem<double> {
 /// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(
-      int size, bool use_abstract = false, bool use_double_only = false) {
+  explicit ExampleDiagram(int size, bool use_abstract = false,
+                          bool use_double_only = false) {
     DiagramBuilder<double> builder;
 
     adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
@@ -52,8 +52,7 @@ class ExampleDiagram : public Diagram<double> {
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
     stateless_ = builder.AddSystem<analysis_test::StatelessSystem<double>>(
-        1.0 /* trigger time */,
-        WitnessFunctionDirection::kCrossesZero);
+        1.0 /* trigger time */, WitnessFunctionDirection::kCrossesZero);
     stateless_->set_name("stateless");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
@@ -65,8 +64,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
-    builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port());
+    builder.Connect(adder0_->get_output_port(), integrator0_->get_input_port());
     builder.Connect(integrator0_->get_output_port(),
                     integrator1_->get_input_port());
 
@@ -142,16 +140,12 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0(
-        1 + 8 + 64,
-        2 + 16 + 128,
-        4 + 32 + 256);  // B
+    Eigen::Vector3d expected_output0(1 + 8 + 64, 2 + 16 + 128,
+                                     4 + 32 + 256);  // B
 
-    Eigen::Vector3d expected_output1(
-        1 + 8,
-        2 + 16,
-        4 + 32);  // A
-    expected_output1 += expected_output0;       // A + B
+    Eigen::Vector3d expected_output1(1 + 8, 2 + 16,
+                                     4 + 32);  // A
+    expected_output1 += expected_output0;      // A + B
 
     Eigen::Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
@@ -248,35 +242,43 @@ TEST_F(DiagramTest, Path) {
 }
 
 TEST_F(DiagramTest, Graphviz) {
-  const std::string id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_.get()));
+  const std::string id =
+      std::to_string(reinterpret_cast<int64_t>(diagram_.get()));
   const std::string dot = diagram_->GetGraphvizString();
   // Check that the Diagram is labeled with its name.
-  EXPECT_NE(std::string::npos, dot.find(
-      "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find("label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";"))
+      << dot;
   // Check that input ports are declared in blue, and output ports in green.
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u1[color=blue, label=\"u1\"")) << dot;
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find("_" + id + "_u1[color=blue, label=\"u1\""))
+      << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find("_" + id + "_y2[color=green, label=\"y2\""))
+      << dot;
   // Check that subsystem records appear.
-  EXPECT_NE(std::string::npos, dot.find(
-      "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]")) << dot;
+  EXPECT_NE(
+      std::string::npos,
+      dot.find("[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]"))
+      << dot;
   // Check that internal edges appear.
-  const std::string adder1_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder1()));
-  const std::string adder2_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder2()));
+  const std::string adder1_id =
+      std::to_string(reinterpret_cast<int64_t>(diagram_->adder1()));
+  const std::string adder2_id =
+      std::to_string(reinterpret_cast<int64_t>(diagram_->adder2()));
   // [Adder 1, output 0] -> [Adder 2, input 1]
   EXPECT_NE(std::string::npos,
-            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;")) << dot;
+            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;"))
+      << dot;
   // Check that synthetic I/O edges appear: inputs in blue, outputs in green.
   // [Diagram Input 2] -> [Adder 1, input 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find("_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];"))
+      << dot;
   // [Adder 2, output 0] -> [Diagram Output 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find(adder2_id + ":y0 -> _" + id + "_y1 [color=green];"))
+      << dot;
 }
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
@@ -353,8 +355,7 @@ TEST_F(DiagramTest, AllocateInputs) {
 
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
-  std::unique_ptr<System<AutoDiffXd>> ad_diagram =
-      diagram_->ToAutoDiffXd();
+  std::unique_ptr<System<AutoDiffXd>> ad_diagram = diagram_->ToAutoDiffXd();
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
@@ -418,8 +419,8 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   // we cannot transmogrify the Diagram to AutoDiffXd.
   const bool use_abstract = false;
   const bool use_double_only = true;
-  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
-      kSize, use_abstract, use_double_only);
+  auto diagram_with_double_only =
+      std::make_unique<ExampleDiagram>(kSize, use_abstract, use_double_only);
   EXPECT_THROW(diagram_with_double_only->ToAutoDiffXd(), std::exception);
 }
 
@@ -432,8 +433,8 @@ TEST_F(DiagramTest, ToSymbolic) {
   // No symbolic support when one of the subsystems does not declare support.
   const bool use_abstract = false;
   const bool use_double_only = true;
-  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
-      kSize, use_abstract, use_double_only);
+  auto diagram_with_double_only =
+      std::make_unique<ExampleDiagram>(kSize, use_abstract, use_double_only);
   EXPECT_THROW(diagram_with_double_only->ToSymbolic(), std::exception);
 }
 
@@ -457,21 +458,17 @@ TEST_F(DiagramTest, Clone) {
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
-  Eigen::Vector3d expected_output0(
-      3 + 8 + 64,
-      6 + 16 + 128,
-      9 + 32 + 256);  // B
+  Eigen::Vector3d expected_output0(3 + 8 + 64, 6 + 16 + 128,
+                                   9 + 32 + 256);  // B
   const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Eigen::Vector3d expected_output1(
-      3 + 8,
-      6 + 16,
-      9 + 32);  // A
-  expected_output1 += expected_output0;       // A + B
+  Eigen::Vector3d expected_output1(3 + 8, 6 + 16,
+                                   9 + 32);  // A
+  expected_output1 += expected_output0;      // A + B
   const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
@@ -532,22 +529,26 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator0(), &d0_context);
     integrator0_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 3);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 3);
 
     State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator1(), &d0_context);
     integrator1_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 9);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 9);
 
     State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator0(), &d1_context);
     integrator2_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 27);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 27);
 
     State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator1(), &d1_context);
     integrator3_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 81);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -570,10 +571,10 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
   EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram0\""));
   EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram1\""));
   // Check that edges between the two subdiagrams exist.
-  const std::string id0 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram0_));
-  const std::string id1 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram1_));
+  const std::string id0 =
+      std::to_string(reinterpret_cast<int64_t>(subdiagram0_));
+  const std::string id1 =
+      std::to_string(reinterpret_cast<int64_t>(subdiagram1_));
   EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
 }
 
@@ -740,8 +741,7 @@ class FeedbackDiagram : public Diagram<T> {
     gain->set_name("gain");
     gain_builder.ExportInput(gain->get_input_port());
     gain_builder.ExportOutput(gain->get_output_port());
-    Diagram<T>* const gain_diagram =
-        builder.AddSystem(gain_builder.Build());
+    Diagram<T>* const gain_diagram = builder.AddSystem(gain_builder.Build());
     gain_diagram->set_name("gain_diagram");
 
     builder.Connect(*integrator_diagram, *gain_diagram);
@@ -784,18 +784,20 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
   const SubclassOfFeedbackDiagram subclass_dut{};
-  EXPECT_THROW(({
-    try {
-      subclass_dut.ToAutoDiffXd();
-    } catch (const std::runtime_error& e) {
-      EXPECT_THAT(
-          std::string(e.what()),
-          testing::MatchesRegex(
-              ".*convert a .*::FeedbackDiagram<double>.* called with a"
-              ".*::SubclassOfFeedbackDiagram at runtime"));
-      throw;
-    }
-  }), std::runtime_error);
+  EXPECT_THROW(
+      ({
+        try {
+          subclass_dut.ToAutoDiffXd();
+        } catch (const std::runtime_error& e) {
+          EXPECT_THAT(
+              std::string(e.what()),
+              testing::MatchesRegex(
+                  ".*convert a .*::FeedbackDiagram<double>.* called with a"
+                  ".*::SubclassOfFeedbackDiagram at runtime"));
+          throw;
+        }
+      }),
+      std::runtime_error);
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The
@@ -848,21 +850,22 @@ class Reduce : public LeafSystem<double> {
 // feedthrough, but the path between diagram input and output doesn't follow
 // this path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
-// This is a diagram that wraps a Reduce Leaf system, exporting the output
-// and the *sink* input. There should be *no* direct feedthrough on the diagram.
-//        +-----------------+
-//        |                 |
-//        |  +-----------+  |
-//        |  +--+        |  |
-//   I +---->+S |        |  |
-//        |  +--+     +--+  |
-//        |  |     +->+O +------> O
-//        |  +--+  |  +--+  |
-//        |  |F +--+     |  |
-//        |  +--+        |  |
-//        |  +-----------+  |
-//        |                 |
-//        +-----------------+
+  // This is a diagram that wraps a Reduce Leaf system, exporting the output
+  // and the *sink* input. There should be *no* direct feedthrough on the
+  // diagram.
+  //        +-----------------+
+  //        |                 |
+  //        |  +-----------+  |
+  //        |  +--+        |  |
+  //   I +---->+S |        |  |
+  //        |  +--+     +--+  |
+  //        |  |     +->+O +------> O
+  //        |  +--+  |  +--+  |
+  //        |  |F +--+     |  |
+  //        |  +--+        |  |
+  //        |  +-----------+  |
+  //        |                 |
+  //        +-----------------+
   DiagramBuilder<double> builder;
   auto reduce = builder.AddSystem<Reduce>();
   builder.ExportInput(reduce->get_sink_input());
@@ -876,22 +879,22 @@ GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
 // Diagram input and output are connected by a system that has direct
 // feedthrough, and the input and output *are* connected by that path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
-// This is a diagram that wraps a Reduce Leaf system, exporting the output
-// and the *feedthrough* input. There should be direct feedthrough on the
-// diagram.
-//        +-----------------+
-//        |                 |
-//        |  +-----------+  |
-//        |  +--+        |  |
-//        |  |S |        |  |
-//        |  +--+     +--+  |
-//        |  |     +->+O +------> O
-//        |  +--+  |  +--+  |
-//   I +---->|F +--+     |  |
-//        |  +--+        |  |
-//        |  +-----------+  |
-//        |                 |
-//        +-----------------+
+  // This is a diagram that wraps a Reduce Leaf system, exporting the output
+  // and the *feedthrough* input. There should be direct feedthrough on the
+  // diagram.
+  //        +-----------------+
+  //        |                 |
+  //        |  +-----------+  |
+  //        |  +--+        |  |
+  //        |  |S |        |  |
+  //        |  +--+     +--+  |
+  //        |  |     +->+O +------> O
+  //        |  +--+  |  +--+  |
+  //   I +---->|F +--+     |  |
+  //        |  +--+        |  |
+  //        |  +-----------+  |
+  //        |                 |
+  //        +-----------------+
   DiagramBuilder<double> builder;
   auto reduce = builder.AddSystem<Reduce>();
   builder.ExportInput(reduce->get_feedthrough_input());
@@ -907,10 +910,8 @@ class RandomInputSystem : public LeafSystem<double> {
  public:
   RandomInputSystem() {
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kGaussian);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
   }
 };
 
@@ -1041,9 +1042,8 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
-                diagram->stateless(),
-                diagram->integrator0(), diagram->integrator1()
-            }),
+                diagram->stateless(), diagram->integrator0(),
+                diagram->integrator1()}),
             diagram->GetSystems());
 }
 
@@ -1116,8 +1116,7 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
 
   EXPECT_EQ(2.0, time);
   const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold1(), *events);
+      diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold1(), *events);
 
   EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
 }
@@ -1131,15 +1130,15 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   EXPECT_EQ(6.0, time);
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold2(), *events);
+        diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold2(),
+                                                      *events);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold1(), *events);
+        diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold1(),
+                                                      *events);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 }
@@ -1253,8 +1252,7 @@ class AbstractStateDiagram : public Diagram<double> {
   }
 
   const SystemWithAbstractState& get_sys(int i) const {
-    if (i == 0)
-      return *sys0_;
+    if (i == 0) return *sys0_;
     return *sys1_;
   }
 
@@ -1299,15 +1297,15 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 2.);
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(0), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(0),
+                                                      *events);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(1), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(1),
+                                                      *events);
     EXPECT_FALSE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
@@ -1332,8 +1330,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
   for (int i = 0; i < 2; i++) {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(i), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(i),
+                                                      *events);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
@@ -1482,39 +1480,39 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
   State<double>* big_state = big_context_->get_mutable_state();
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator0_, big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator0_, big_state)
       .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 1);
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator1_, big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator1_, big_state)
       .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 2);
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator2_, big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator2_, big_state)
       .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 3);
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator3_, big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator3_, big_state)
       .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 4);
 
   // Checks state.
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+                .get_continuous_state()
+                ->get_vector()[0],
             1);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+                .get_continuous_state()
+                ->get_vector()[0],
             2);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+                .get_continuous_state()
+                ->get_vector()[0],
             3);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+                .get_continuous_state()
+                ->get_vector()[0],
             4);
 
   // Checks output.
@@ -1660,9 +1658,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   context->get_mutable_state()->CopyFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdates(*context,
-                                       events->get_discrete_update_events(),
-                                       tmp_discrete_state.get());
+  diagram->CalcDiscreteVariableUpdates(
+      *context, events->get_discrete_update_events(), tmp_discrete_state.get());
   context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
 
   // Publishes last.
@@ -1712,11 +1709,10 @@ class MyEventTestSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() ==
-          Event<double>::TriggerType::kPeriodic) {
+      if (event->get_trigger_type() == Event<double>::TriggerType::kPeriodic) {
         periodic_count_++;
       } else if (event->get_trigger_type() ==
-          Event<double>::TriggerType::kPerStep) {
+                 Event<double>::TriggerType::kPerStep) {
         per_step_count_++;
       } else {
         DRAKE_ABORT();
@@ -1949,7 +1945,7 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
           .get_mutable_numeric_parameter(0));
 
   const double original_damping = params1->damping();
-  const double new_damping = 5.0*original_damping;
+  const double new_damping = 5.0 * original_damping;
   EXPECT_EQ(params2->damping(), original_damping);
 
   params1->set_damping(new_damping);
@@ -1970,9 +1966,8 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
 class RandomContextTestSystem : public LeafSystem<double> {
  public:
   RandomContextTestSystem() {
-    this->DeclareContinuousState(
-        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
-    this->DeclareNumericParameter(
+    DeclareContinuousState(BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+    DeclareNumericParameter(
         BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
   }
 
@@ -2010,6 +2005,10 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   Eigen::Vector3d params0 = context->get_numeric_parameter(0)->CopyToVector();
   Eigen::Vector3d params1 = context->get_numeric_parameter(1)->CopyToVector();
 
+  std::cerr << "state   = " << state << std::endl;
+  std::cerr << "params0 = " << params0 << std::endl;
+  std::cerr << "params1 = " << params1 << std::endl;
+
   // Should return the (same) original values.
   diagram->SetDefaultContext(context.get());
   EXPECT_TRUE((state.array() ==
@@ -2022,10 +2021,21 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_numeric_parameter(1)->get_value().array())
                   .all());
 
-  RandomGenerator generator;
+  std::cerr << "=============Set Default Context==================\n";
+
+  std::cerr << "state   = "
+            << context->get_continuous_state_vector().CopyToVector()
+            << std::endl;
+  std::cerr << "params0 = " << context->get_numeric_parameter(0)->get_value()
+            << std::endl;
+  std::cerr << "params1 = " << context->get_numeric_parameter(1)->get_value()
+            << std::endl;
+
+  RandomGenerator generator1;
+  RandomGenerator generator2;
 
   // Should return different values.
-  diagram->SetRandomContext(context.get(), &generator);
+  diagram->SetRandomContext(context.get(), &generator1);
   EXPECT_TRUE((state.array() !=
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
@@ -2036,13 +2046,26 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_numeric_parameter(1)->get_value().array())
                   .all());
 
+  std::cerr << "=============Set Random Context==================\n";
+
+  std::cerr << "state   = "
+            << context->get_continuous_state_vector().CopyToVector()
+            << std::endl;
+  std::cerr << "params0 = " << context->get_numeric_parameter(0)->get_value()
+            << std::endl;
+  std::cerr << "params1 = " << context->get_numeric_parameter(1)->get_value()
+            << std::endl;
+
+  std::cerr << normal(generator2) << ", " << normal(generator2) << ", "
+            << normal(generator2) << std::endl;
+
   // Update backup.
   state = context->get_continuous_state_vector().CopyToVector();
   params0 = context->get_numeric_parameter(0)->CopyToVector();
   params1 = context->get_numeric_parameter(1)->CopyToVector();
 
   // Should return different values (again).
-  diagram->SetRandomContext(context.get(), &generator);
+  diagram->SetRandomContext(context.get(), &generator1);
   EXPECT_TRUE((state.array() !=
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());

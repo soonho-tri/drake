@@ -384,7 +384,7 @@ class Diagram : public System<T>,
 
     // Set state of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto& subcontext = diagram_context->GetSubsystemContext(i);
+      const auto& subcontext = diagram_context->GetSubsystemContext(i);
       auto& substate = diagram_state->get_mutable_substate(i);
       registered_systems_[i]->SetRandomState(subcontext, &substate, generator);
     }
@@ -556,8 +556,8 @@ class Diagram : public System<T>,
   /// Returns the const subsystem composite event collection from @p events
   /// that corresponds to @p subsystem. Aborts if @p subsystem is not a
   /// subsystem of this diagram.
-  const CompositeEventCollection<T>&
-  GetSubsystemCompositeEventCollection(const System<T>& subsystem,
+  const CompositeEventCollection<T>& GetSubsystemCompositeEventCollection(
+      const System<T>& subsystem,
       const CompositeEventCollection<T>& events) const {
     auto ret = DoGetTargetSystemCompositeEventCollection(subsystem, &events);
     DRAKE_DEMAND(ret != nullptr);
@@ -569,8 +569,8 @@ class Diagram : public System<T>,
   /// diagram.
   CompositeEventCollection<T>& GetMutableSubsystemCompositeEventCollection(
       const System<T>& subsystem, CompositeEventCollection<T>* events) const {
-    auto ret = DoGetMutableTargetSystemCompositeEventCollection(
-        subsystem, events);
+    auto ret =
+        DoGetMutableTargetSystemCompositeEventCollection(subsystem, events);
     DRAKE_DEMAND(ret != nullptr);
     return *ret;
   }
@@ -624,7 +624,10 @@ class Diagram : public System<T>,
   void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
-    *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
+    *dot << "subgraph cluster" << id
+         << "diagram"
+            " {"
+         << std::endl;
     *dot << "color=black" << std::endl;
     *dot << "concentrate=true" << std::endl;
     std::string name = this->get_name();
@@ -632,7 +635,8 @@ class Diagram : public System<T>,
     *dot << "label=\"" << name << "\";" << std::endl;
 
     // Add a cluster for the input port nodes.
-    *dot << "subgraph cluster" << id << "inputports" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "inputports"
+         << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -644,7 +648,8 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the output port nodes.
-    *dot << "subgraph cluster" << id << "outputports" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "outputports"
+         << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -656,7 +661,8 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the subsystems.
-    *dot << "subgraph cluster" << id << "subsystems" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "subsystems"
+         << " {" << std::endl;
     *dot << "color=white" << std::endl;
     *dot << "label=\"\"" << std::endl;
     // -- Add the subsystems themselves.
@@ -768,10 +774,10 @@ class Diagram : public System<T>,
   /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
   /// type conversion support only if every contained subsystem provides the
   /// same support.
-  Diagram() : System<T>(
-      SystemScalarConverter(
-          SystemTypeTag<systems::Diagram>{},
-          SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
+  Diagram()
+      : System<T>(SystemScalarConverter(
+            SystemTypeTag<systems::Diagram>{},
+            SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
 
   /// (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this
   /// constructor are obligated to call DiagramBuilder::BuildInto(this).
@@ -813,8 +819,9 @@ class Diagram : public System<T>,
   /// Provides witness functions of subsystems that are active at the beginning
   /// of a continuous time interval. The vector of witness functions is not
   /// ordered in a particular manner.
-  void DoGetWitnessFunctions(const Context<T>& context,
-                std::vector<const WitnessFunction<T>*>* witnesses) const final {
+  void DoGetWitnessFunctions(
+      const Context<T>& context,
+      std::vector<const WitnessFunction<T>*>* witnesses) const final {
     // A temporary vector is necessary since the vector of witnesses is
     // declared to be empty on entry to DoGetWitnessFunctions().
     std::vector<const WitnessFunction<T>*> temp_witnesses;
@@ -837,14 +844,12 @@ class Diagram : public System<T>,
 
   /// Returns a pointer to mutable context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>& target_system, Context<T>* context) const final {
-    if (&target_system == this)
-      return context;
+  Context<T>* DoGetMutableTargetSystemContext(const System<T>& target_system,
+                                              Context<T>* context) const final {
+    if (&target_system == this) return context;
 
     return GetSubsystemStuff<Context<T>, DiagramContext<T>>(
-        target_system, context,
-        &System<T>::DoGetMutableTargetSystemContext,
+        target_system, context, &System<T>::DoGetMutableTargetSystemContext,
         &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
@@ -852,38 +857,32 @@ class Diagram : public System<T>,
   /// of this, nullptr is returned otherwise.
   const Context<T>* DoGetTargetSystemContext(
       const System<T>& target_system, const Context<T>* context) const final {
-    if (&target_system == this)
-      return context;
+    if (&target_system == this) return context;
 
     return GetSubsystemStuff<const Context<T>, const DiagramContext<T>>(
-        target_system, context,
-        &System<T>::DoGetTargetSystemContext,
+        target_system, context, &System<T>::DoGetTargetSystemContext,
         &DiagramContext<T>::GetSubsystemContext);
   }
 
   /// Returns a pointer to mutable state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
-  State<T>* DoGetMutableTargetSystemState(
-      const System<T>& target_system, State<T>* state) const final {
-    if (&target_system == this)
-      return state;
+  State<T>* DoGetMutableTargetSystemState(const System<T>& target_system,
+                                          State<T>* state) const final {
+    if (&target_system == this) return state;
 
     return GetSubsystemStuff<State<T>, DiagramState<T>>(
-        target_system, state,
-        &System<T>::DoGetMutableTargetSystemState,
+        target_system, state, &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
   }
 
   /// Returns a pointer to const state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
-  const State<T>* DoGetTargetSystemState(
-      const System<T>& target_system, const State<T>* state) const final {
-    if (&target_system == this)
-      return state;
+  const State<T>* DoGetTargetSystemState(const System<T>& target_system,
+                                         const State<T>* state) const final {
+    if (&target_system == this) return state;
 
     return GetSubsystemStuff<const State<T>, const DiagramState<T>>(
-        target_system, state,
-        &System<T>::DoGetTargetSystemState,
+        target_system, state, &System<T>::DoGetTargetSystemState,
         &DiagramState<T>::get_substate);
   }
 
@@ -892,8 +891,7 @@ class Diagram : public System<T>,
   CompositeEventCollection<T>* DoGetMutableTargetSystemCompositeEventCollection(
       const System<T>& target_system,
       CompositeEventCollection<T>* events) const final {
-    if (&target_system == this)
-      return events;
+    if (&target_system == this) return events;
 
     return GetSubsystemStuff<CompositeEventCollection<T>,
                              DiagramCompositeEventCollection<T>>(
@@ -907,8 +905,7 @@ class Diagram : public System<T>,
   const CompositeEventCollection<T>* DoGetTargetSystemCompositeEventCollection(
       const System<T>& target_system,
       const CompositeEventCollection<T>* events) const final {
-    if (&target_system == this)
-      return events;
+    if (&target_system == this) return events;
 
     return GetSubsystemStuff<const CompositeEventCollection<T>,
                              const DiagramCompositeEventCollection<T>>(
@@ -1096,8 +1093,8 @@ class Diagram : public System<T>,
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
       std::function<
-      std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
-  allocater_func) const {
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocater_func) const {
     const int num_systems = num_subsystems();
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (int i = 0; i < num_systems; ++i) {
@@ -1201,7 +1198,7 @@ class Diagram : public System<T>,
         State<T>& substate = diagram_state->get_mutable_substate(i);
 
         registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
-            &substate);
+                                                       &substate);
       }
     }
   }
@@ -1229,9 +1226,9 @@ class Diagram : public System<T>,
   template <typename BaseStuff, typename DerivedStuff>
   BaseStuff* GetSubsystemStuff(
       const System<T>& target_system, BaseStuff* my_stuff,
-      std::function<BaseStuff* (const System<T>*, const System<T>&, BaseStuff*)>
+      std::function<BaseStuff*(const System<T>*, const System<T>&, BaseStuff*)>
           recursive_getter,
-      std::function<BaseStuff& (DerivedStuff*, int)> get_child_stuff) const {
+      std::function<BaseStuff&(DerivedStuff*, int)> get_child_stuff) const {
     static_assert(
         std::is_same<BaseStuff,
                      typename std::remove_pointer<BaseStuff>::type>::value,
@@ -1247,8 +1244,7 @@ class Diagram : public System<T>,
 
     int index = 0;
     for (const auto& child : registered_systems_) {
-      BaseStuff& child_stuff =
-          get_child_stuff(&my_stuff_as_derived, index);
+      BaseStuff& child_stuff = get_child_stuff(&my_stuff_as_derived, index);
 
       BaseStuff* const target_stuff =
           recursive_getter(child.get(), target_system, &child_stuff);
@@ -1275,8 +1271,8 @@ class Diagram : public System<T>,
     for (const auto& old_system : registered_systems_) {
       // Convert old_system to new_system using the old_system's converter.
       std::unique_ptr<System<NewType>> new_system =
-          old_system->get_system_scalar_converter().
-          template Convert<NewType>(*old_system);
+          old_system->get_system_scalar_converter().template Convert<NewType>(
+              *old_system);
       DRAKE_DEMAND(new_system != nullptr);
 
       // Update our mapping and take ownership.
@@ -1365,8 +1361,7 @@ class Diagram : public System<T>,
     // For all the subsystems whose next update time is bigger than *time,
     // clear their event collections.
     for (int i = 0; i < num_subsystems(); ++i) {
-      if (times[i] > *time)
-        info->get_mutable_subevent_collection(i).Clear();
+      if (times[i] > *time) info->get_mutable_subevent_collection(i).Clear();
     }
   }
 
@@ -1626,7 +1621,8 @@ class Diagram : public System<T>,
   // For any T1 & T2, Diagram<T1> considers Diagram<T2> a friend, so that
   // Diagram can provide transmogrification methods across scalar types.
   // See Diagram<T>::ConvertScalarType.
-  template <typename> friend class Diagram;
+  template <typename>
+  friend class Diagram;
 };
 
 }  // namespace systems
