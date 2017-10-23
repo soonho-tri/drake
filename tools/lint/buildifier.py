@@ -76,9 +76,8 @@ def _passes_check_mode(args):
         raise e
 
 
-def main():
+def main(argv):
     # Slice out our overlay command-line argument "--all".
-    argv = sys.argv[1:]
     find_all = False
     if "--all" in argv:
         find_all = True
@@ -136,4 +135,5 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    argv = sys.argv[1:]
+    sys.exit(main(argv))
