@@ -1,7 +1,8 @@
 #pragma once
 
-#include "drake/common/symbolic.h"
 #include <cstdint>
+
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace systems {
@@ -34,7 +35,6 @@ enum class PixelType {
 
   kExpr,
 };
-
 
 /// The enum class to be used to express semantic meaning of pixels.
 /// This also expresses the order of channels in a pixel if the pixel has
