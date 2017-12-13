@@ -42,6 +42,7 @@ cmake
 diffstat
 doxygen
 dreal-deps/coinor/clp
+dreal-deps/ibex/ibex
 glew
 glib
 graphviz

@@ -118,6 +118,15 @@ zlib1g-dev
 EOF
     )
 
+# Install IBEX, a dReal dependency.
+wget -O /tmp/libibex-dev_2.6.3_amd64.deb \
+     https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171211141723.gitda10a84afd381535ba4b682c8eb80321a6d2a914~16.04_amd64.deb
+if echo "f1f943d26c7c04bc024563d4cf7c0e610b4fd98822d2e03b9cb89b79c8fb63ae /tmp/libibex-dev_2.6.3_amd64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/libibex-dev_2.6.3_amd64.deb
+else
+  die "The IBEX deb does not have the expected SHA256.  Not installing IBEX."
+fi
+
 # Install Bazel.
 wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
 if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
