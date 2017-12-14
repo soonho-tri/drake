@@ -1,11 +1,33 @@
 # -*- python -*-
 
+load("@drake//tools/install:install.bzl", "install")
+
 package(default_visibility = ["//visibility:public"])
+
+DREAL_HDRS = glob(["usr/include/dreal/**/*.h"])
 
 cc_library(
     name = "dreal_deb",
     srcs = ["usr/lib/libdreal.so"],
-    hdrs = glob(["usr/include/dreal/**/*.h"]),
+    hdrs = DREAL_HDRS,
     includes = ["usr/include"],
     deps = ["@ibex"],
+)
+
+install(
+    name = "install",
+    data_strip_prefix = ["usr/lib"],
+    workspace = "dreal",
+    targets = [":dreal_deb"],
+    hdrs = DREAL_HDRS,
+    hdr_dest = "include/dreal",
+    hdr_strip_prefix = ["usr/include/dreal"],
+    # TODO(soonho-tri): I found that it does not install libdreal.so without
+    # specifying it in data section. Why?
+    data = ["usr/lib/libdreal.so"],
+    data_dest = "lib",
+    docs = [
+        "usr/share/doc/dreal/LICENSE.txt",
+    ],
+    doc_strip_prefix = ["usr/share/doc/dreal"],
 )

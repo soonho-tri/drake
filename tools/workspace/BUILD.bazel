@@ -17,6 +17,8 @@ drake_py_binary(
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
+    # TODO(soonho-tri): Need to choose dreal_homebrew_bottle in OSX.
+    "dreal_deb",
     "drake_visualizer",
     "eigen",
     "fcl",
