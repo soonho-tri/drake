@@ -1,17 +1,25 @@
 #include "drake/automotive/maliput/api/lane.h"
 
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
 
 // These instantiations must match the API documentation in lane.h.
-template<>
+template <>
 GeoPositionT<double> Lane::ToGeoPositionT<double>(
     const LanePositionT<double>& lane_pos) const {
   return DoToGeoPosition(lane_pos);
 }
 
-template<>
+template <>
+GeoPositionT<symbolic::Expression> Lane::ToGeoPositionT<symbolic::Expression>(
+    const LanePositionT<symbolic::Expression>& lane_pos) const {
+  return DoToGeoPosition(lane_pos);
+}
+
+template <>
 GeoPositionT<AutoDiffXd> Lane::ToGeoPositionT<AutoDiffXd>(
     const LanePositionT<AutoDiffXd>& lane_pos) const {
   // Fail fast if lane_pos contains derivatives of inconsistent sizes.
@@ -22,19 +30,17 @@ GeoPositionT<AutoDiffXd> Lane::ToGeoPositionT<AutoDiffXd>(
   return DoToGeoPositionAutoDiff(lane_pos);
 }
 
-template<>
+template <>
 LanePositionT<double> Lane::ToLanePositionT<double>(
-    const GeoPositionT<double>& geo_pos,
-    GeoPositionT<double>* nearest_point,
+    const GeoPositionT<double>& geo_pos, GeoPositionT<double>* nearest_point,
     double* distance) const {
   return DoToLanePosition(geo_pos, nearest_point, distance);
 }
 
-template<>
+template <>
 LanePositionT<AutoDiffXd> Lane::ToLanePositionT<AutoDiffXd>(
     const GeoPositionT<AutoDiffXd>& geo_pos,
-    GeoPositionT<AutoDiffXd>* nearest_point,
-    AutoDiffXd* distance) const {
+    GeoPositionT<AutoDiffXd>* nearest_point, AutoDiffXd* distance) const {
   // Fail fast if geo_pos contains derivatives of inconsistent sizes.
   const Eigen::VectorXd deriv = geo_pos.x().derivatives();
   DRAKE_THROW_UNLESS(deriv.size() == geo_pos.y().derivatives().size());
