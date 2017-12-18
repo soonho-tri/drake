@@ -224,6 +224,10 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
   }));
 }
 
+TEST_F(IdmControllerTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*dut_));
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake

@@ -144,5 +144,5 @@ void IdmController<T>::ImplCalcAcceleration(
 }  // namespace drake
 
 // These instantiations must match the API documentation in idm_controller.h.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::automotive::IdmController)
