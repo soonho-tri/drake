@@ -44,6 +44,7 @@ namespace automotive {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -88,7 +89,8 @@ class IdmController : public systems::LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename> friend class IdmController;
+  template <typename>
+  friend class IdmController;
 
   // Converts @p pose into RoadPosition.
   const maliput::api::RoadPosition GetRoadPosition(
@@ -107,13 +109,4 @@ class IdmController : public systems::LeafSystem<T> {
 };
 
 }  // namespace automotive
-
-namespace systems {
-namespace scalar_conversion {
-// Disable symbolic support, because we use ExtractDoubleOrThrow.
-template <>
-struct Traits<automotive::IdmController> : public NonSymbolicTraits {};
-}  // namespace scalar_conversion
-}  // namespace systems
-
 }  // namespace drake

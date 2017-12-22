@@ -123,11 +123,9 @@ void IdmController<T>::ImplCalcAcceleration(
                                        T(ego_position.pos.h()));
   T s_dot_ego = PoseSelector<T>::GetSigmaVelocity(
       {ego_position.lane, lane_position, ego_velocity});
-  T s_dot_lead =
-      (abs(lead_car_pose.odometry.pos.s()) ==
-       std::numeric_limits<T>::infinity())
-          ? T(0.)
-          : PoseSelector<T>::GetSigmaVelocity(lead_car_pose.odometry);
+  T s_dot_lead = if_then_else(
+      abs(lead_car_pose.odometry.pos.s()) == std::numeric_limits<T>::infinity(),
+      T(0.), PoseSelector<T>::GetSigmaVelocity(lead_car_pose.odometry));
 
   // Saturate the net_distance at `idm_params.distance_lower_limit()` away from
   // the ego car to avoid near-singular solutions inherent to the IDM equation.
@@ -144,5 +142,5 @@ void IdmController<T>::ImplCalcAcceleration(
 }  // namespace drake
 
 // These instantiations must match the API documentation in idm_controller.h.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::automotive::IdmController)

@@ -224,6 +224,62 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
   }));
 }
 
+TEST_F(IdmControllerTest, ToSymbolic) {
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
+
+  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& other_dut) {
+    const auto other_context = other_dut.CreateDefaultContext();
+    const auto other_output = other_dut.AllocateOutput(*other_context);
+
+    // Verify that CalcOutput returns a result and validate its AutoDiff
+    // derivatives.
+    const AutoDiffXd kZeroDerivative{0., Vector1d(0.)};
+
+    auto pose = std::make_unique<PoseVector<symbolic::Expression>>();
+    const symbolic::Variable x{"x"};
+    const symbolic::Variable y{"y"};
+    const symbolic::Variable z{"z"};
+
+    const symbolic::Variable vx{"vx"};
+    const symbolic::Variable vy{"vy"};
+    const symbolic::Variable vz{"vz"};
+
+    const symbolic::Variable wx{"ωx"};
+    const symbolic::Variable wy{"ωy"};
+    const symbolic::Variable wz{"ωz"};
+
+    const Translation3<symbolic::Expression> translation(x, y, z);
+    pose->set_translation(translation);
+    other_context->FixInputPort(ego_pose_input_index_, std::move(pose));
+
+    auto velocity = std::make_unique<FrameVelocity<symbolic::Expression>>();
+    const multibody::SpatialVelocity<symbolic::Expression> velocity_vector(
+        Vector3<symbolic::Expression>(wx, wy, wz),
+        Vector3<symbolic::Expression>(vx, vy, vz));
+    velocity->set_velocity(velocity_vector);
+    other_context->FixInputPort(ego_velocity_input_index_, std::move(velocity));
+
+    systems::rendering::PoseBundle<symbolic::Expression> poses(1);
+    FrameVelocity<symbolic::Expression> traffic_velocity;
+    traffic_velocity.set_velocity(velocity_vector);
+    poses.set_velocity(0, traffic_velocity);
+    poses.set_pose(0, Isometry3<symbolic::Expression>(translation));
+    other_context->FixInputPort(traffic_input_index_,
+                                systems::AbstractValue::Make(poses));
+
+    std::cerr << "HERE1?\n";
+    const auto result =
+        other_output->get_vector_data(acceleration_output_index_);
+    other_dut.CalcOutput(*other_context, other_output.get());
+    std::cerr << "HERE2?\n";
+
+    // It suffices to check that the autodiff derivative seeded at the
+    // inputs produces a sane value and that the derivatives field is
+    // correctly sized.
+    std::cerr << (*result)[0] << std::endl;
+  }));
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake
