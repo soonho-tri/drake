@@ -817,6 +817,33 @@ template <>
 struct NumTraits<drake::symbolic::Expression>
     : GenericNumTraits<drake::symbolic::Expression> {
   static inline int digits10() { return 0; }
+
+  static inline Real epsilon() {
+    return numext::numeric_limits<double>::epsilon();
+  }
+
+  static inline Real dummy_precision() {
+    return NumTraits<double>::dummy_precision();
+  }
+
+  static inline Real quiet_NaN() { return drake::symbolic::Expression::NaN(); }
+
+  enum {
+    IsInteger = 0,
+    IsSigned = 1,
+    IsComplex = 0,
+    RequireInitialization = 1,
+    // Note(soonho-tri): The following cost assignments are necessary for Eigen
+    // to perform the matrix-multiplication operations by following its
+    // mathematical definition, A*B(i, j) = ∑ₖ A(i, k) * B(k, j). Since
+    // floating-point arithmetic is non-associative, re-ordering can cause
+    // different results. See `ExpressionMatrixRespectDoubleMatrix` test in
+    // `common/test/symbolic_expression_matrix_test.cc`, which fails without the
+    // following assignments.
+    ReadCost = HugeCost,
+    AddCost = HugeCost,
+    MulCost = HugeCost,
+  };
 };
 
 // Informs Eigen that Variable op Variable gets Expression.

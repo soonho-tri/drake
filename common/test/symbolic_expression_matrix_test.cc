@@ -417,6 +417,19 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
   EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_var_1_));
 }
 
+TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrix) {
+  Eigen::Matrix<double, 3, 3> M;
+  // clang-format off
+  M << -0.999984, -0.0826997, -0.905911,
+       -0.736924,  0.0655345,  0.357729,
+        0.511211, -0.562082,   0.358593;
+  // clang-format on
+  const Eigen::Matrix<Expression, 3, 3> r1 = (M * M).cast<Expression>();
+  const Eigen::Matrix<Expression, 3, 3> r2 =
+      M.cast<Expression>() * M.cast<Expression>();
+  EXPECT_EQ(r1, r2);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
