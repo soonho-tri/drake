@@ -292,8 +292,8 @@ class Expression {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Expression& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Expression& item) noexcept {
     DelegatingHasher delegating_hasher(
         [&hasher](const void* data, const size_t length) {
           return hasher(data, length);
@@ -781,11 +781,10 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
-struct hash<drake::symbolic::Expression>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Expression> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
-template<>
+template <>
 struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
 #endif
 
@@ -840,9 +839,12 @@ struct NumTraits<drake::symbolic::Expression>
     // different results. See `ExpressionMatrixRespectDoubleMatrix` test in
     // `common/test/symbolic_expression_matrix_test.cc`, which fails without the
     // following assignments.
-    ReadCost = HugeCost,
-    AddCost = HugeCost,
-    MulCost = HugeCost,
+    // ReadCost = 1,  // HugeCost,
+    // AddCost = 1,  // HugeCost,
+    // MulCost = 1,  // HugeCost,
+    ReadCost = NumTraits<double>::ReadCost,
+    AddCost = NumTraits<double>::AddCost,
+    MulCost = NumTraits<double>::MulCost,
   };
 };
 
@@ -952,8 +954,9 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 template <typename DerivedV, typename DerivedB>
 struct is_eigen_nonvector_expression_double_pair
     : std::integral_constant<
-          bool, is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
-                    is_eigen_nonvector_of<DerivedB, double>::value> {};
+          bool,
+          is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
+              is_eigen_nonvector_of<DerivedB, double>::value> {};
 
 /*
  * Determine if two EigenBase<> types are vectors of Expressions and doubles
@@ -962,7 +965,8 @@ struct is_eigen_nonvector_expression_double_pair
 template <typename DerivedV, typename DerivedB>
 struct is_eigen_vector_expression_double_pair
     : std::integral_constant<
-          bool, is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
-                    is_eigen_vector_of<DerivedB, double>::value> {};
+          bool,
+          is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
+              is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake

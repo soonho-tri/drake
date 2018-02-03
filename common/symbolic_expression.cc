@@ -203,6 +203,7 @@ string Expression::to_string() const {
 }
 
 Expression operator+(Expression lhs, const Expression& rhs) {
+  std::cerr << lhs << " + " << rhs << std::endl;
   lhs += rhs;
   return lhs;
 }
@@ -318,6 +319,7 @@ Expression Expression::operator--(int) {
 }
 
 Expression operator*(Expression lhs, const Expression& rhs) {
+  std::cerr << lhs << " * " << rhs << std::endl;
   lhs *= rhs;
   return lhs;
 }

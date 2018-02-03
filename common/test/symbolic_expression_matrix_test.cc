@@ -418,16 +418,129 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrix) {
-  Eigen::Matrix<double, 3, 3> M;
   // clang-format off
-  M << -0.999984, -0.0826997, -0.905911,
-       -0.736924,  0.0655345,  0.357729,
-        0.511211, -0.562082,   0.358593;
+  Eigen::Matrix<double, 3, 3> M;
+  M << 0.1, 0.2, 0.3,
+       0.4, 0.5, 0.6,
+       0.7, 0.8, 0.9;
   // clang-format on
   const Eigen::Matrix<Expression, 3, 3> r1 = (M * M).cast<Expression>();
   const Eigen::Matrix<Expression, 3, 3> r2 =
       M.cast<Expression>() * M.cast<Expression>();
+
+  if (!(r1 == r2)) {
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        // if (r1(i, j) != r2(i, j)) {
+        // std::cerr << i << ", " << j << "\t" << r1(i, j) << " " << r2(i, j)
+        //           << "\n";
+        double tl = 0.0;
+        for (int k = 0; k < 3; ++k) {
+          tl += M(i, k) * M(k, j);
+        }
+        double tr = 0.0;
+        for (int k = 2; k >= 0; --k) {
+          tr += M(i, k) * M(k, j);
+        }
+        std::cerr << i << ", " << j << " = ";
+
+        if (r1(i, j) == tl) {
+          std::cerr << "left";
+        } else if (r1(i, j) == tr) {
+          std::cerr << "right";
+        } else {
+          std::cerr << "?";
+        }
+        std::cerr << "\t";
+        if (r2(i, j) == tl) {
+          std::cerr << "left";
+        } else if (r2(i, j) == tr) {
+          std::cerr << "right";
+        } else {
+          std::cerr << "?";
+        }
+        std::cerr << "\n";
+
+        // std::cerr << "The true left value is the same with double: "
+        //           << (tl == r1(i, j)) << std::endl;
+        // std::cerr << "The true left value is the same with expression: "
+        //           << (tl == r2(i, j)) << std::endl;
+        // std::cerr << "The true right value is the same with double: "
+        //           << (tr == r1(i, j)) << std::endl;
+        // std::cerr << "The true right value is the same with expression: "
+        //           << (tr == r2(i, j)) << std::endl;
+        // std::cerr << "double     = " << std::setprecision(22) << r1(i, j)
+        //           << std::endl;
+        // std::cerr << "Expression = " << std::setprecision(22) << r2(i, j)
+        //           << std::endl;
+        // std::cerr << "True left  = " << std::setprecision(22) << tl
+        //           << std::endl;
+        // std::cerr << "True right = " << std::setprecision(22) << tr
+        // << std::endl;
+        // }
+      }
+    }
+  }
   EXPECT_EQ(r1, r2);
+}
+
+// TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrixaa) {
+//   // clang-format off
+//   Eigen::Matrix<double, 1, 3> M1;
+//   Eigen::Matrix<double, 3, 1> M2;
+//   M1 << 0.4, 0.5, 0.6;
+//   M2 << 0.3, 0.6, 0.9;
+//   // clang-format on
+//   std::cerr.precision(20);
+//   const Eigen::Matrix<Expression, 1, 1> r1 = (M1 * M2).cast<Expression>();
+//   const Eigen::Matrix<Expression, 1, 1> r2 =
+//       M1.cast<Expression>() * M2.cast<Expression>();
+//   if (!(r1 == r2)) {
+//     std::cerr << r1 << "\n-----------------\n" << r2 << std::endl;
+//   }
+//   std::cerr << "----------------\n";
+//   std::cerr << M1(0) * M2(0) + M1(1) * M2(1) + M1(2) * M2(2) << std::endl;
+
+//   EXPECT_EQ(r1, r2);
+// }
+
+// TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrixab) {
+//   const Expression r1 = Expression(0.4 * 0.3 + 0.5 * 0.6 + 0.6 * 0.9);
+//   const Expression r2 = Expression(0.4) * Expression(0.3) +
+//                         Expression(0.5) * Expression(0.6) +
+//                         Expression(0.6) * Expression(0.9);
+//   if (!(r1 == r2)) {
+//     std::cerr << r1 << "\n-----------------\n" << r2 << std::endl;
+//   }
+// }
+
+TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrixaa) {
+  // clang-format off
+  Eigen::Matrix<double, 1, 3> M1;
+  Eigen::Matrix<double, 3, 1> M2;
+  M1 << 0.4, 0.5, 0.6;
+  M2 << 0.1, 0.4, 0.7;
+  // clang-format on
+  std::cerr.precision(20);
+  const Eigen::Matrix<Expression, 1, 1> r1 = (M1 * M2).cast<Expression>();
+  const Eigen::Matrix<Expression, 1, 1> r2 =
+      M1.cast<Expression>() * M2.cast<Expression>();
+  if (!(r1 == r2)) {
+    std::cerr << r1 << "\n-----------------\n" << r2 << std::endl;
+  }
+  std::cerr << "----------------\n";
+  std::cerr << M1(0) * M2(0) + M1(1) * M2(1) + M1(2) * M2(2) << std::endl;
+  EXPECT_EQ(r1, r2);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixRespectDoubleMatrixab) {
+  const Expression r1 = Expression(0.4 * 0.1 + 0.5 * 0.4 + 0.6 * 0.7);
+  const Expression r2 = Expression(0.4) * Expression(0.1) +
+                        Expression(0.5) * Expression(0.4) +
+                        Expression(0.6) * Expression(0.7);
+  if (!(r1 == r2)) {
+    std::cerr << r1 << "\n-----------------\n" << r2 << std::endl;
+  }
 }
 
 }  // namespace
