@@ -142,11 +142,14 @@ TEST_F(SymbolicExpressionTransformationTest, ExpectedAnswers) {
   // Expected result from Transform<double> * Transform<Expression>.
   Eigen::Matrix<Expression, 4, 4> expected_double_expr;
   // clang-format off
-  expected_double_expr << 0, 0, -1, (1 - z),
-                          0, 1,  0, (2 + y),
-                          1, 0,  1, (3 + x + z),
+  expected_double_expr << 0, 0, -1, (1 + 0 * x + 0 * y - z),
+                          0, 1,  0, (2 + 0 * x + y + 0 * z),
+                          1, 0,  1, (3 + x + 0 * y + z),
                           0, 0,  0, 1;
   // clang-format on
+  std::cerr << (isometry_double * isometry_expr).matrix() << std::endl
+            << std::endl;
+  std::cerr << expected_double_expr << std::endl << std::endl;
   EXPECT_EQ((isometry_double * isometry_expr).matrix(), expected_double_expr);
 }
 }  // namespace

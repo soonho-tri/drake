@@ -53,15 +53,15 @@ class SymbolicExpressionArrayTest : public ::testing::Test {
           y_, pi_;        //  [y  3.141592]
 
     array_expr_1_ << x_, y_,
-                      z_, x_;
+                     z_, x_;
     array_expr_2_ << z_, x_,
-                      y_, z_;
+                     y_, z_;
     array_var_1_ << var_x_, var_y_,
-                     var_z_, var_x_;
+                    var_z_, var_x_;
     array_var_2_ << var_y_, var_z_,
-                     var_x_, var_x_;
+                    var_x_, var_x_;
     array_double_ << 1.0, 2.0,
-                      3.0, 4.0;
+                     3.0, 4.0;
     // clang-format on
   }
 };
@@ -523,6 +523,9 @@ TEST_F(SymbolicExpressionArrayTest, ArrayExprEqArrayExpr) {
   const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
   const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
   const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
+  std::cerr << a1 << std::endl;
+  std::cerr << "-----------------" << std::endl;
+  std::cerr << a1.unaryExpr(ptr_fun(is_true)) << std::endl;
   EXPECT_TRUE(a1.unaryExpr(ptr_fun(is_true)).all());
   EXPECT_TRUE(a2.unaryExpr(ptr_fun(is_true)).all());
   EXPECT_TRUE(a3.unaryExpr(ptr_fun(is_true)).all());

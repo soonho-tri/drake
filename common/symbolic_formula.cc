@@ -226,6 +226,12 @@ ostream& operator<<(ostream& os, const Formula& f) {
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {
+  if (e1.EqualTo(e2)) {
+    // Structural equality has to be checked explicitly here, because `E1 - E1`
+    // does not necessarily generate `0` in general. For example, `x - x` is
+    // reduced to `0 * x`, not `0` to be sound.
+    return Formula::True();
+  }
   // Simplification: E1 - E2 == 0  =>  True
   const Expression diff{e1 - e2};
   if (diff.get_kind() == ExpressionKind::Constant) {

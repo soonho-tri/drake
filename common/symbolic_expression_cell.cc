@@ -119,8 +119,10 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     // = c0 * e2 + c1 * e_{1,1} * e2 + ... + c_n * e_{1,n} * e2
     const double c0{get_constant_in_addition(e1)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e1)};
+    const Expression init{c0 == 0.0 ? Expression::Zero()
+                                    : ExpandMultiplication(c0, e2)};
     return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(c0, e2),
+        m1.begin(), m1.end(), init,
         [&e2](const Expression& init, const pair<Expression, double>& p) {
           return init + ExpandMultiplication(p.second, p.first, e2);
         });
@@ -130,8 +132,10 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     // = e1 * c0 + e1 * c1 * e_{2,1} + ... + e1 * c_n * e_{2,n}
     const double c0{get_constant_in_addition(e2)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e2)};
+    const Expression init{c0 == 0.0 ? Expression::Zero()
+                                    : ExpandMultiplication(e1, c0)};
     return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(e1, c0),
+        m1.begin(), m1.end(), init,
         [&e1](const Expression& init, const pair<Expression, double>& p) {
           return init + ExpandMultiplication(e1, p.second, p.first);
         });
@@ -541,6 +545,15 @@ Expression ExpressionAdd::Substitute(const Substitution& s) const {
       [&s](const Expression& init, const pair<Expression, double>& p) {
         return init + p.first.Substitute(s) * p.second;
       });
+}
+
+// TODO(soonho): Find the right name for this function.
+Expression mul(const Expression& e1, const Expression& e2) {
+  if (is_zero(e1) || is_zero(e2)) {
+    return Expression::Zero();
+  } else {
+    return e1 * e2;
+  }
 }
 
 Expression ExpressionAdd::Differentiate(const Variable& x) const {

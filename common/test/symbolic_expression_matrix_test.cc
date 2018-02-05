@@ -77,6 +77,12 @@ TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
 TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
   auto const M(A_ - A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected <<
+    0 * x_, 0,
+    0 * y_, 0,
+    0 * z_, 0;
+  // clang-format on
   EXPECT_EQ(M, M_expected);  // should be all zero.
 }
 
