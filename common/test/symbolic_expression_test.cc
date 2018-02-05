@@ -1005,21 +1005,28 @@ TEST_F(SymbolicExpressionTest, Sub1) {
 
 TEST_F(SymbolicExpressionTest, Sub2) {
   Expression e1{x_ - y_};
-  const Expression e2{x_ - z_};
+  const Expression e2{-z_};
   const Expression e3{e1 - e2};
   const auto str_rep_e3(e3.to_string());
-  EXPECT_EQ(str_rep_e3, "( - y + z)");
+  EXPECT_EQ(str_rep_e3, "(x - y + z)");
   e1 -= z_;
   EXPECT_PRED2(ExprEqual, e1, x_ - y_ - z_);
   EXPECT_EQ(e3.to_string(), str_rep_e3);  // e3 doesn't change.
 }
 
 TEST_F(SymbolicExpressionTest, Sub3) {
-  const Expression e1{x_ - y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{e1 - e2};
+  const Expression e1{x_};
+  const Expression e2{x_};
   EXPECT_PRED2(ExprEqual, e1, e2);
-  EXPECT_EQ(e3.to_string(), "0");  // simplified
+  // Note that this expression is not 0.0, but 0 * x¹.
+  const Expression e3{e1 - e2};
+
+  // Check if e3 = 0 * x¹.
+  EXPECT_TRUE(is_multiplication(e3));
+  EXPECT_EQ(get_constant_in_multiplication(e3), 0.0);
+  EXPECT_EQ(get_base_to_exponent_map_in_multiplication(e3).size(), 1);
+  EXPECT_EQ(get_base_to_exponent_map_in_multiplication(e3).count(x_), 1);
+  EXPECT_EQ(get_base_to_exponent_map_in_multiplication(e3).at(x_), 1.0);
 }
 
 TEST_F(SymbolicExpressionTest, Dec1) {
@@ -1139,7 +1146,7 @@ TEST_F(SymbolicExpressionTest, Mul6) {
 TEST_F(SymbolicExpressionTest, Mul7) {
   const Expression e1{2 * pow(x_, 2)};
   const Expression e2{3 * pow(x_, -2)};
-  EXPECT_PRED2(ExprEqual, e1 * e2, 6);
+  EXPECT_PRED2(ExprEqual, e1 * e2, 6 * pow(x_, 0.0));
 }
 
 TEST_F(SymbolicExpressionTest, AddMul1) {
@@ -1147,7 +1154,8 @@ TEST_F(SymbolicExpressionTest, AddMul1) {
   EXPECT_PRED2(ExprEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
 
   const Expression e2{x_ + y_ + (-x_)};
-  EXPECT_PRED2(ExprEqual, e2, y_);
+  EXPECT_PRED2(ExprEqual, e2, 0 * x_ + y_);
+  EXPECT_PRED2(ExprNotEqual, e2, y_);
 
   const Expression e3{(2 * x_) + (3 * x_)};
   EXPECT_PRED2(ExprEqual, e3, 5 * x_);
@@ -1189,7 +1197,7 @@ TEST_F(SymbolicExpressionTest, Div3) {
   const Expression e3{e1 / e2};
   EXPECT_EQ(e1.to_string(), "(x / y)");
   EXPECT_EQ(e2.to_string(), "(x / y)");
-  EXPECT_EQ(e3.to_string(), "1");  // simplified
+  EXPECT_EQ(e3.to_string(), "((x / y) / (x / y))");  // Not simplified to 1.
 }
 
 TEST_F(SymbolicExpressionTest, Div4) {
@@ -1304,9 +1312,13 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
 }
 
 TEST_F(SymbolicExpressionTest, Pow1) {
-  // pow(x, 0.0) => 1.0
-  EXPECT_PRED2(ExprEqual, pow(x_plus_y_, Expression::Zero()),
-               Expression::One());
+  // e = pow(x + y, 0.0) => (x + y)⁰ ≠ 1.0
+  const Expression e{pow(x_plus_y_, Expression::Zero())};
+  EXPECT_PRED2(ExprNotEqual, e, Expression::One());
+  EXPECT_TRUE(is_pow(e));
+  EXPECT_PRED2(ExprEqual, get_first_argument(e), x_plus_y_);
+  EXPECT_PRED2(ExprEqual, get_second_argument(e), 0.0);
+
   // pow(x, 1.0) => x
   EXPECT_PRED2(ExprEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
   // (x^2)^3 => x^(2*3)
@@ -1692,13 +1704,13 @@ TEST_F(SymbolicExpressionTest, Floor) {
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse1) {
-  // should be simplified to 1.0 since (x + 1.0 > x) => true.
+  // should not be simplified.
   const Expression ite1{if_then_else(x_ + 1.0 > x_, 1.0, 0.0)};
-  EXPECT_PRED2(ExprEqual, ite1, 1.0);
+  EXPECT_PRED2(ExprNotEqual, ite1, 1.0);
 
-  // should be simplified to 0.0 since (x > x + 1.0) => false.
+  // should not be simplified.
   const Expression ite2{if_then_else(x_ > x_ + 1.0, 1.0, 0.0)};
-  EXPECT_PRED2(ExprEqual, ite2, 0.0);
+  EXPECT_PRED2(ExprNotEqual, ite2, 0.0);
 
   // should not be simplified.
   const Expression ite3{if_then_else(x_ > y_, 1.0, 0.0)};
@@ -1860,7 +1872,7 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
 
   // 2x - 7 -2x + 2 => -5
   const Expression e3{2 * x_ - 7 - 2 * x_ + 2};
-  EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
+  EXPECT_THROW(ExtractDoubleOrThrow(e3), std::exception);
 }
 
 }  // namespace
