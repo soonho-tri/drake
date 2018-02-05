@@ -573,7 +573,6 @@ ostream& ExpressionAdd::Display(ostream& os) const {
 ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
                                     const double coeff,
                                     const Expression& term) const {
-  DRAKE_ASSERT(coeff != 0.0);
   if (coeff > 0.0) {
     if (print_plus) {
       os << " + ";
@@ -668,12 +667,6 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
     // Case1: term is already in the map
     double& this_coeff{it->second};
     this_coeff += coeff;
-    if (this_coeff == 0.0) {
-      // If the coefficient becomes zero, remove the entry.
-      // TODO(soonho-tri): The following operation is not sound since it cancels
-      // `term` which might contain 0/0 problems.
-      expr_to_coeff_map_.erase(it);
-    }
   } else {
     // Case2: term is not found in expr_to_coeff_map_.
     // Add the entry (term, coeff).
@@ -960,12 +953,6 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     // Example: x^3 * x^2 => x^5
     Expression& this_exponent = it->second;
     this_exponent += exponent;
-    if (is_zero(this_exponent)) {
-      // If it ends up with base^0 (= 1.0) then remove this entry from the map.
-      // TODO(soonho-tri): The following operation is not sound since it can
-      // cancels `base` which might include 0/0 problems.
-      base_to_exponent_map_.erase(it);
-    }
   } else {
     // Product is not found in base_to_exponent_map_. Add the entry (base,
     // exponent).

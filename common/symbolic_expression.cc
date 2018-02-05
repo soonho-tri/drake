@@ -267,13 +267,6 @@ Expression operator-(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
-  // Simplification: E - E => 0
-  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
-  // which might cause 0/0 during evaluation.
-  if (lhs.EqualTo(rhs)) {
-    lhs = Expression::Zero();
-    return lhs;
-  }
   // Simplification: x - 0 => x
   if (is_zero(rhs)) {
     return lhs;
@@ -379,55 +372,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     }
   }
 
-  // Simplification: 0 * E => 0
-  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
-  // which might cause 0/0 during evaluation.
-  if (is_zero(lhs)) {
-    return lhs;
-  }
-  // Simplification: E * 0 => 0
-  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
-  // which might cause 0/0 during evaluation.
-  if (is_zero(rhs)) {
-    lhs = Expression::Zero();
-    return lhs;
-  }
-  // Pow-related simplifications.
-  if (is_pow(lhs)) {
-    const Expression& e1{get_first_argument(lhs)};
-    if (is_pow(rhs)) {
-      const Expression& e3{get_first_argument(rhs)};
-      if (e1.EqualTo(e3)) {
-        // Simplification: pow(e1, e2) * pow(e1, e4) => pow(e1, e2 + e4)
-        // TODO(soonho-tri): This simplification is not sound. For example, x^4
-        // * x^(-3) => x. The original expression `x^4 * x^(-3)` is evaluated to
-        // `nan` when x = 0 while the simplified expression `x` is evaluated to
-        // 0.
-        const Expression& e2{get_second_argument(lhs)};
-        const Expression& e4{get_second_argument(rhs)};
-        lhs = pow(e1, e2 + e4);
-        return lhs;
-      }
-    }
-    if (e1.EqualTo(rhs)) {
-      // Simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
-      // TODO(soonho-tri): This simplification is not sound.
-      const Expression& e2{get_second_argument(lhs)};
-      lhs = pow(e1, e2 + 1);
-      return lhs;
-    }
-  } else {
-    if (is_pow(rhs)) {
-      const Expression& e1{get_first_argument(rhs)};
-      if (e1.EqualTo(lhs)) {
-        // Simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
-        // TODO(soonho-tri): This simplification is not sound.
-        const Expression& e2{get_second_argument(rhs)};
-        lhs = pow(e1, 1 + e2);
-        return lhs;
-      }
-    }
-  }
   if (is_constant(lhs) && is_constant(rhs)) {
     // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
     lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
@@ -485,13 +429,6 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
       throw runtime_error(oss.str());
     }
     lhs = Expression{v1 / v2};
-    return lhs;
-  }
-  // Simplification: E / E => 1
-  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
-  // which might contain 0/0 problems.
-  if (lhs.EqualTo(rhs)) {
-    lhs = Expression::One();
     return lhs;
   }
   lhs.ptr_ = make_shared<ExpressionDiv>(lhs, rhs);
@@ -574,12 +511,6 @@ Expression pow(const Expression& e1, const Expression& e2) {
       const double v1{get_constant_value(e1)};
       ExpressionPow::check_domain(v1, v2);
       return Expression{std::pow(v1, v2)};
-    }
-    // pow(E, 0) => 1
-    // TODO(soonho-tri): This simplification is not sound since it cancels `E`
-    // which might contain 0/0 problems.
-    if (v2 == 0.0) {
-      return Expression::One();
     }
     // pow(E, 1) => E
     if (v2 == 1.0) {
