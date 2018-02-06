@@ -93,13 +93,13 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingArithmetic) {
 TEST_F(VariableOverloadingTest, OperatorOverloadingArithmeticAssignment) {
   Expression e{x_ + y_};
   e += z_;  // x + y + z
-  EXPECT_EQ(e.to_string(), "(x + y + z)");
-  e -= x_;  // y + z
-  EXPECT_EQ(e.to_string(), "(y + z)");
-  e *= w_;  // w * (y + z)
-  EXPECT_EQ(e.to_string(), "(w * (y + z))");
-  e /= y_;  // (w * (y + z)) / y
-  EXPECT_EQ(e.to_string(), "((w * (y + z)) / y)");
+  EXPECT_PRED2(ExprEqual, e, x_ + y_ + z_);
+  e -= x_;  // 0* x + y + z
+  EXPECT_PRED2(ExprEqual, e, 0 * x_ + y_ + z_);
+  e *= w_;  // w * (0 * x + y + z)
+  EXPECT_PRED2(ExprEqual, e, w_ * (0 * x_ + y_ + z_));
+  e /= y_;  // (w * (0 * x + y + z)) / y
+  EXPECT_PRED2(ExprEqual, e, (w_ * (0 * x_ + y_ + z_)) / y_);
 }
 
 TEST_F(VariableOverloadingTest, OperatorOverloadingEigenTestSanityCheck) {
@@ -137,12 +137,12 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingEigenVariableOpVariable) {
   EXPECT_PRED2(ExprEqual, m1(1, 0), z_ + z_);
   EXPECT_PRED2(ExprEqual, m1(1, 1), w_ + w_);
 
-  // [x  y] - [x  y] = [x - x    y - y] = [0 0]
-  // [z  w]   [z  w]   [z - z    w - w]   [0 0]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), 0.0);
+  // [x  y] - [x  y] = [x - x    y - y] = [0 * x_  0 * y_]
+  // [z  w]   [z  w]   [z - z    w - w]   [0 * z_  0 * w_]
+  EXPECT_PRED2(ExprEqual, m2(0, 0), 0.0 * x_);
+  EXPECT_PRED2(ExprEqual, m2(0, 1), 0.0 * y_);
+  EXPECT_PRED2(ExprEqual, m2(1, 0), 0.0 * z_);
+  EXPECT_PRED2(ExprEqual, m2(1, 1), 0.0 * w_);
 
   // [x  y] * [x  y] = [x * x + y * z    x * y + y * w]
   // [z  w]   [z  w]   [z * x + w * z    z * y + w * w]

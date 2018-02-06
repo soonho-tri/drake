@@ -169,7 +169,8 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionExprVar) {
   const MatrixX<Expression> M2{M_expr_fixed_ - M_var_dyn_};
   const MatrixX<Expression> M3{M_expr_dyn_ - M_var_fixed_};
   const MatrixX<Expression> M4{M_expr_dyn_ - M_var_dyn_};
-  const string expected{"0 0\n0 0"};
+  const string expected{
+      "      (0 * x)       (0 * y)\n      (0 * z)       (0 * w)"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
@@ -194,7 +195,8 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionVarExpr) {
   const MatrixX<Expression> M2{M_var_fixed_ - M_expr_dyn_};
   const MatrixX<Expression> M3{M_var_dyn_ - M_expr_fixed_};
   const MatrixX<Expression> M4{M_var_dyn_ - M_expr_dyn_};
-  const string expected{"0 0\n0 0"};
+  const string expected{
+      "      (0 * x)       (0 * y)\n      (0 * z)       (0 * w)"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
