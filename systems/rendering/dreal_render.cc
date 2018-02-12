@@ -1,7 +1,10 @@
-#include "drake/solvers/dreal_solver.h"
-#include "drake/systems/rendering/symbolic_render.h"
 
 #include <fstream>
+#include <Eigen/Core>
+
+#include "drake/common/eigen_types.h"
+#include "drake/solvers/dreal_solver.h"
+#include "drake/systems/rendering/symbolic_render.h"
 
 namespace drake {
 namespace systems {
@@ -51,6 +54,27 @@ Matrix4<Expression> look_at(const Vector3<Expression>& pos,
   return mat;
 }
 
+void PrintImage(const Formula& f, const int img_width, const int img_height) {
+  sensors::ImageGrey8U img(img_width, img_height);
+  for (int yi = 0; yi < img_height; yi++) {
+    for (int xi = 0; xi < img_width; xi++) {
+      env[sx] = (xi + 0.5) / img_width;
+      env[sy] = (yi + 0.5) / img_height;
+      double val = f.Evaluate(env);
+      *img.at(xi, yi) = uint8_t(std::min(val, 1.0) * 255.0);
+    }
+  }
+  std::fstream fs("./image.ppm", std::fstream::out);
+  fs << "P3\n" << img_width << " " << img_height << "\n" << 255 << "\n";
+  for (int yi = 0; yi < img_height; yi++) {
+    for (int xi = 0; xi < img_width; xi++) {
+      int val = int(*img.at(xi, yi));
+      fs << val << " " << val << " " << val << " ";
+    }
+  }
+  fs.close();
+}
+
 int main() {
   // Camera parameters
   Variable px{"px"}, py{"py"}, pz{"pz"};
@@ -83,20 +107,23 @@ int main() {
                   {ux, 0.0},  {uy, 1.0}, {uz, 0.0}};
   // Fill in constant values
   Expression hit_triangle_folded = hit_triangle.EvaluatePartial(env);
-  double interval = 0.1;
+  double interval = 0.5;
   Formula f0x{-1.0 - interval <= v0_x && v0_x <= -1.0 + interval};
   Formula f0y{-1.0 - interval <= v0_y && v0_y <= -1.0 + interval};
   Formula f0z{0.0 - interval <= v0_z && v0_z <= 0.0 + interval};
 
   Formula f1x{1.0 - interval <= v1_x && v1_x <= 1.0 + interval};
   Formula f1y{-1.0 - interval <= v1_y && v1_y <= -1.0 + interval};
-  Formula f1z{0.0 - interval <= v1_z && v0_z <= 0.0 + interval};
+  Formula f1z{0.0 - interval <= v1_z && v1_z <= 0.0 + interval};
 
   Formula f2x{0.0 - interval <= v2_x && v2_x <= 0.0 + interval};
   Formula f2y{1.0 - interval <= v2_y && v2_y <= 1.0 + interval};
   Formula f2z{0.0 - interval <= v2_z && v2_z <= 0.0 + interval};
 
-  Formula no_hit{hit_triangle_folded == 0.0};
+  Formula hit{get_conditional_formula(hit_triangle_folded)};
+  Formula no_hit{!hit};
+
+  std::cerr << no_hit << std::endl;
 
   auto result = DrealSolver::CheckSatisfiability(
       f0x && f0y && f0z && f1x && f1y && f1z && f2x && f2y && f2z && no_hit,
