@@ -248,6 +248,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("Substitute", [](const Formula& self, const Variable& var,
                             const double c) { return self.Substitute(var, c); })
+      .def("Substitute",
+           [](const Formula& self, const Substitution& s) {
+             return self.Substitute(s);
+           })
       .def("to_string", &Formula::to_string)
       .def("__repr__", &Formula::to_string)
       .def("__eq__", [](const Formula& self,
