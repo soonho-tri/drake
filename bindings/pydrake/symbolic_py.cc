@@ -238,6 +238,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::class_<Formula>(m, "Formula")
       .def("GetFreeVariables", &Formula::GetFreeVariables)
       .def("EqualTo", &Formula::EqualTo)
+      .def("Evaluate",
+           [](const Formula& self,
+              const std::unordered_map<Variable, double>& map) {
+             return self.Evaluate(Environment{map});
+           })
       .def("Substitute",
            [](const Formula& self, const Variable& var, const Expression& e) {
              return self.Substitute(var, e);

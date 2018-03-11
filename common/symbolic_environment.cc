@@ -51,6 +51,13 @@ Environment::Environment(const initializer_list<key_type> vars) {
   }
 }
 
+Environment::Environment(map m) : map_{std::move(m)} {
+  for (const auto& p : map_) {
+    throw_if_dummy(p.first);
+    throw_if_nan(p.second);
+  }
+}
+
 void Environment::insert(const key_type& key, const mapped_type& elem) {
   throw_if_dummy(key);
   throw_if_nan(elem);
