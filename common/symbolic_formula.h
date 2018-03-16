@@ -185,8 +185,8 @@ class Formula {
   static Formula True();
   static Formula False();
 
-  /** Conversion to bool. */
-  explicit operator bool() const { return Evaluate(); }
+  // /** Conversion to bool. */
+  // explicit operator bool() const { return Evaluate(); }
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>

@@ -579,7 +579,26 @@ Polynomial& Polynomial::operator*=(const double c) {
 }
 
 bool Polynomial::EqualTo(const Polynomial& p) const {
-  return monomial_to_coefficient_map_ == p.monomial_to_coefficient_map();
+  const MapType& monomial_to_coefficient_map_in_p{
+      p.monomial_to_coefficient_map()};
+  if (monomial_to_coefficient_map_.size() !=
+      monomial_to_coefficient_map_in_p.size()) {
+    return false;
+  }
+  for (const pair<const Monomial, Expression>& item :
+       monomial_to_coefficient_map_) {
+    const Monomial& key{item.first};
+    const Expression& value{item.second};
+    const auto it = monomial_to_coefficient_map_in_p.find(key);
+    if (it == monomial_to_coefficient_map_in_p.end()) {
+      return false;  // key is not found in p.
+    } else {
+      if (!std::equal_to<Expression>{}(value, it->second)) {
+        return false;  // two different values for the same key.
+      }
+    }
+  }
+  return true;
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {

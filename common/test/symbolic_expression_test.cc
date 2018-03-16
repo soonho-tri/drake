@@ -403,9 +403,9 @@ TEST_F(SymbolicExpressionTest, GetConstantValue) {
 }
 
 TEST_F(SymbolicExpressionTest, GetVariable) {
-  EXPECT_EQ(get_variable(x_), var_x_);
-  EXPECT_EQ(get_variable(y_), var_y_);
-  EXPECT_EQ(get_variable(z_), var_z_);
+  EXPECT_TRUE(get_variable(x_).equal_to(var_x_));
+  EXPECT_TRUE(get_variable(y_).equal_to(var_y_));
+  EXPECT_TRUE(get_variable(z_).equal_to(var_z_));
 }
 
 TEST_F(SymbolicExpressionTest, GetArgument) {
@@ -1893,10 +1893,10 @@ TEST_F(SymbolicExpressionTest, Jacobian) {
   EXPECT_EQ(J1.cols(), 2);
   EXPECT_EQ(J2.cols(), 2);
   // Checks the elements.
-  EXPECT_EQ(J1(0), y_ + cos(x_));
-  EXPECT_EQ(J1(1), x_);
-  EXPECT_EQ(J2(0), J1(0));
-  EXPECT_EQ(J2(1), J1(1));
+  EXPECT_PRED2(ExprEqual, J1(0), y_ + cos(x_));
+  EXPECT_PRED2(ExprEqual, J1(1), x_);
+  EXPECT_PRED2(ExprEqual, J2(0), J1(0));
+  EXPECT_PRED2(ExprEqual, J2(1), J1(1));
 }
 
 TEST_F(SymbolicExpressionTest, GetDistinctVariables) {

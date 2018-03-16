@@ -9,6 +9,24 @@ namespace {
 
 using test::FormulaEqual;
 
+bool CheckMatrices(const MatrixX<Expression>& M1,
+                   const MatrixX<Expression>& M2) {
+  if (M1.cols() != M2.cols()) {
+    return false;
+  }
+  if (M1.rows() != M2.rows()) {
+    return false;
+  }
+  for (int i = 0; i < M1.rows(); ++i) {
+    for (int j = 0; j < M1.cols(); ++j) {
+      if (!std::equal_to<Expression>{}(M1(i, j), M2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 class SymbolicExpressionMatrixTest : public ::testing::Test {
  protected:
   const Variable var_x_{"x"};
@@ -71,13 +89,13 @@ TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
                 (y_ + y_), (neg_one_ + neg_one_),
                 (z_ + z_), (pi_ + pi_);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
   auto const M(A_ - A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
-  EXPECT_EQ(M, M_expected);  // should be all zero.
+  CheckMatrices(M, M_expected);  // should be all zero.
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
@@ -88,7 +106,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
                 (y_ - x_), (neg_one_ - e_),
                 (z_ - y_), (pi_ - pi_);
   // clang-format on
-  EXPECT_EQ(M, M_expected);  // should be all zero.
+  CheckMatrices(M, M_expected);  // should be all zero.
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
@@ -100,7 +118,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
     (y_ * x_ + -e_),      (y_ * y_ + - pi_),     (y_ * z_ + - two_),
     (z_ * x_ + pi_ * e_), (z_ * y_ + pi_ * pi_), (z_ * z_ + pi_ * two_);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
@@ -111,7 +129,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
     (x_ * x_ + (y_ * y_ + z_ * z_)),    (x_ + (-y_ + z_ * pi_)),
     (e_ * x_ + (pi_ * y_ + two_ * z_)), (e_ * one_ + pi_ * - one_ + two_ * pi_);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
@@ -122,7 +140,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
                 (2 * y_), (2 * neg_one_),
                 (2 * z_), (2 * pi_);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
@@ -133,7 +151,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
                 (y_ * 2), (neg_one_ * 2),
                 (z_ * 2), (pi_ * 2);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
@@ -144,7 +162,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
                 (y_ / 2), (neg_one_ / 2),
                 (z_ / 2), (pi_ / 2);
   // clang-format on
-  EXPECT_EQ(M, M_expected);
+  CheckMatrices(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
