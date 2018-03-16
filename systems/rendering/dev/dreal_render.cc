@@ -118,8 +118,10 @@ int Main() {
   Formula f2z{ 0.0 - interval <= v2_z && v2_z <=  0.0 + interval};
   // clang-format on
 
-  Formula hit{get_conditional_formula(hit_triangle_center)};
-  Formula no_hit{!hit};
+  Formula hit{hit_triangle_center == 1.0};
+  // In the following we explicitly check if the lhs is equal to 0.0 instead of
+  // negating `hit` to avoid any numerical issues (`≠ 1.0` vs `= 0.0`).
+  Formula no_hit{hit_triangle_center == 0.0};
 
   std::cerr << no_hit << std::endl;
 
@@ -138,8 +140,7 @@ int Main() {
     }
     std::cerr << hit.Substitute(subst) << std::endl << std::endl;
     std::cerr << hit_triangle_x_y.Substitute(subst) << std::endl;
-    PrintImage(get_conditional_formula(hit_triangle_x_y.Substitute(subst)), sx,
-               sy, 64, 48);
+    PrintImage(hit_triangle_x_y.Substitute(subst) == 1.0, sx, sy, 64, 48);
   } else {
     std::cout << "UNSAT" << std::endl;
   }
