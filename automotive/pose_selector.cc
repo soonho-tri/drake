@@ -12,6 +12,7 @@
 #include "drake/common/autodiffxd_make_coherent.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/extract_double.h"
 
@@ -37,8 +38,8 @@ namespace {
 // (i.e. within `linear_tolerance()` of `lane->driveable_bounds()` and
 // `lane->elevation_bounds()`).
 template <typename T>
-bool IsWithinDriveable(const LanePositionT<T>& lane_position,
-                       const Lane* lane) {
+Bool<T> IsWithinDriveable(const LanePositionT<T>& lane_position,
+                          const Lane* lane) {
   const double tol =
       lane->segment()->junction()->road_geometry()->linear_tolerance();
   if (lane_position.s() < -tol || lane_position.s() > lane->length() + tol) {
@@ -62,7 +63,7 @@ bool IsWithinDriveable(const LanePositionT<T>& lane_position,
 // `linear_tolerance()` of `lane->lane_bounds()` and
 // `lane->elevation_bounds()`).
 template <typename T>
-bool IsWithinLane(const GeoPositionT<T>& geo_position, const Lane* lane) {
+Bool<T> IsWithinLane(const GeoPositionT<T>& geo_position, const Lane* lane) {
   const double tol =
       lane->segment()->junction()->road_geometry()->linear_tolerance();
   T distance{};
@@ -78,18 +79,14 @@ bool IsWithinLane(const GeoPositionT<T>& geo_position, const Lane* lane) {
 // of the driveable bounds of @p lane and, in addition, `r` is within its lane
 // bounds.
 template <typename T>
-bool IsWithinLane(const LanePositionT<T>& lane_position, const Lane* lane) {
+Bool<T> IsWithinLane(const LanePositionT<T>& lane_position, const Lane* lane) {
   const double tol =
       lane->segment()->junction()->road_geometry()->linear_tolerance();
-  if (IsWithinDriveable(lane_position, lane)) {
-    const maliput::api::RBounds r_bounds =
-        lane->lane_bounds(ExtractDoubleOrThrow(lane_position.s()));
-    if (lane_position.r() >= r_bounds.min() - tol ||
-        lane_position.r() <= r_bounds.max() + tol) {
-      return true;
-    }
-  }
-  return false;
+  const maliput::api::RBounds r_bounds =
+      lane->lane_bounds(ExtractDoubleOrThrow(lane_position.s()));
+  return IsWithinDriveable(lane_position, lane) &&
+         (lane_position.r() >= r_bounds.min() - tol ||
+          lane_position.r() <= r_bounds.max() + tol);
 }
 
 // Given a @p lane_direction, returns the LaneEnd corresponding to the
@@ -154,9 +151,10 @@ LaneDirection CalcLaneDirection(
   // The dot product of two quaternions is the cosine of half the angle between
   // the two rotations.  Given two quaternions q₀, q₁ and letting θ be the angle
   // difference between them, then -π/2 ≤ θ ≤ π/2 iff q₀.q₁ ≥ √2/2.
-  const bool with_s = (side == AheadOrBehind::kAhead)
-                          ? lane_rotation.dot(rotation) >= sqrt(2.) / 2.
-                          : lane_rotation.dot(rotation) < sqrt(2.) / 2.;
+  const bool with_s = ExtractBoolOrThrow(
+      Bool<T>{side == AheadOrBehind::kAhead
+                  ? lane_rotation.dot(rotation) >= sqrt(2.) / 2.
+                  : lane_rotation.dot(rotation) < sqrt(2.) / 2.});
   return LaneDirection(lane, with_s);
 }
 
@@ -266,7 +264,9 @@ ClosestPose<T> FindSingleClosestInDefaultPath(
           GeoPositionT<T>::FromXyz(traffic_isometry.translation());
 
       if (ego_geo_position == traffic_geo_position) continue;
-      if (!IsWithinLane(traffic_geo_position, lane_direction.lane)) continue;
+      if (!ExtractBoolOrThrow(
+              IsWithinLane(traffic_geo_position, lane_direction.lane)))
+        continue;
 
       const LanePositionT<T> traffic_lane_position =
           lane_direction.lane->ToLanePositionT<T>(traffic_geo_position, nullptr,
@@ -572,5 +572,5 @@ T PoseSelector<T>::GetSigmaVelocity(const RoadOdometry<T>& road_odometry) {
 }  // namespace drake
 
 // These instantiations must match the API documentation in pose_selector.h.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::automotive::PoseSelector)

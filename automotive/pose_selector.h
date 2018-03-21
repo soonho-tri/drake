@@ -58,6 +58,7 @@ enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 ///

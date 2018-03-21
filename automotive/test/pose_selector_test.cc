@@ -742,6 +742,38 @@ GTEST_TEST(PoseSelectorTest, MultiSegmentRoad) {
   }
 }
 
+TEST_F(PoseSelectorDragwayTest, SymbolicTest) {
+  using symbolic::Expression;
+
+  // When no cars are found on a dragway whose length is less than the
+  // scan_distance, then infinite distances should be returned.
+  const double kShortLaneLength{40.};
+  MakeDragway(2 /* num lanes */, kShortLaneLength);
+
+  PoseVector<Expression> ego_pose;
+  PoseBundle<Expression> traffic_poses(kNumDragwayTrafficCars);
+
+  // Define the default poses.
+  SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
+
+  // Choose a scan-ahead distance greater than the lane length.
+  const Expression scan_ahead_distance(kShortLaneLength + 10.);
+  EXPECT_GT(scan_ahead_distance,
+            kShortLaneLength - ego_pose.get_translation().x());
+  EXPECT_GT(scan_ahead_distance, ego_pose.get_translation().x());
+
+  // Scan for cars in the left lane, which should contain no cars.
+  const std::map<AheadOrBehind, const ClosestPose<Expression>> closest_poses =
+      PoseSelector<Expression>::FindClosestPair(
+          get_lane(ego_pose, *road_)->to_left(), ego_pose, traffic_poses,
+          scan_ahead_distance, ScanStrategy::kPath);
+
+  // Expect distances to have infinite value in both the ahead and behind
+  // directions.
+  EXPECT_EQ(kInf, closest_poses.at(AheadOrBehind::kAhead).distance);
+  EXPECT_EQ(kInf, closest_poses.at(AheadOrBehind::kBehind).distance);
+}
+
 // Construct a monolane road with three confluent feeder lanes correponding to
 // three distinct branch points.
 //
