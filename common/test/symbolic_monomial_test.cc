@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
@@ -11,6 +12,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
+using std::equal;
 using std::map;
 using std::ostringstream;
 using std::pair;
@@ -23,7 +25,16 @@ namespace symbolic {
 namespace {
 
 using test::ExprEqual;
+using test::VarEqual;
 using test::VarLess;
+
+bool MapEqual(const map<Variable, int>& m1, const map<Variable, int>& m2) {
+  return equal(m1.cbegin(), m1.cend(), m2.cbegin(), m2.cend(),
+               [](const pair<const Variable, int>& p1,
+                  const pair<const Variable, int>& p2) {
+                 return p1.first.equal_to(p2.first) && (p1.second == p2.second);
+               });
+}
 
 class MonomialTest : public ::testing::Test {
  protected:
@@ -123,7 +134,7 @@ TEST_F(MonomialTest, ConstructFromVariable) {
 
   // Checks that powers = {x ↦ 1}.
   ASSERT_EQ(powers.size(), 1u);
-  EXPECT_EQ(powers.begin()->first, var_x_);
+  EXPECT_PRED2(VarEqual, powers.begin()->first, var_x_);
   EXPECT_EQ(powers.begin()->second, 1);
 }
 
@@ -176,7 +187,7 @@ TEST_F(MonomialTest, MonomialWithZeroExponent) {
   EXPECT_EQ(m2.get_powers().size(), 1);
   std::map<Variable, int> power_expected;
   power_expected.emplace(var_y_, 2);
-  EXPECT_EQ(m2.get_powers(), power_expected);
+  EXPECT_TRUE(MapEqual(m2.get_powers(), power_expected));
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_0) {

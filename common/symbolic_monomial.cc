@@ -1,4 +1,5 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
+#include <algorithm>
 #include <map>
 #include <numeric>
 #include <stdexcept>
@@ -14,6 +15,7 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::equal;
 using std::make_pair;
 using std::map;
 using std::ostream;
@@ -123,7 +125,12 @@ Variables Monomial::GetVariables() const {
 }
 
 bool Monomial::operator==(const Monomial& m) const {
-  return powers_ == m.powers_;
+  return equal(powers_.cbegin(), powers_.cend(), m.powers_.cbegin(),
+               m.powers_.cend(),
+               [](const pair<const Variable, int>& p1,
+                  const pair<const Variable, int>& p2) {
+                 return p1.first.equal_to(p2.first) && (p1.second == p2.second);
+               });
 }
 
 bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }

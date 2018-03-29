@@ -12,6 +12,7 @@ namespace {
 using std::ostringstream;
 using symbolic::Expression;
 using symbolic::test::ExprEqual;
+using symbolic::test::VarEqual;
 
 // Provides common variables and matrices that are used by the
 // following tests.
@@ -112,10 +113,10 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingEigenTestSanityCheck) {
 
   // [x  y]
   // [z  w]
-  EXPECT_EQ(var_mat_(0, 0), x_);
-  EXPECT_EQ(var_mat_(0, 1), y_);
-  EXPECT_EQ(var_mat_(1, 0), z_);
-  EXPECT_EQ(var_mat_(1, 1), w_);
+  EXPECT_PRED2(VarEqual, var_mat_(0, 0), x_);
+  EXPECT_PRED2(VarEqual, var_mat_(0, 1), y_);
+  EXPECT_PRED2(VarEqual, var_mat_(1, 0), z_);
+  EXPECT_PRED2(VarEqual, var_mat_(1, 1), w_);
 
   // [x + z  x + w]
   // [y + z  y + w]

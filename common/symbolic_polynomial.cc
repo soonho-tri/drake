@@ -579,7 +579,25 @@ Polynomial& Polynomial::operator*=(const double c) {
 }
 
 bool Polynomial::EqualTo(const Polynomial& p) const {
-  return monomial_to_coefficient_map_ == p.monomial_to_coefficient_map();
+  if (monomial_to_coefficient_map_.size() !=
+      p.monomial_to_coefficient_map().size()) {
+    return false;
+  }
+  for (const pair<const Monomial, Expression>& item :
+       monomial_to_coefficient_map_) {
+    const Monomial& m{item.first};
+    const Expression& coeff{item.second};
+    const auto it = p.monomial_to_coefficient_map().find(m);
+    if (it == p.monomial_to_coefficient_map().end()) {
+      // Key `m` is not in `p`.
+      return false;
+    }
+    if (!it->second.EqualTo(coeff)) {
+      // `this` and `p` have different values for the key `m`.
+      return false;
+    }
+  }
+  return true;
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {
