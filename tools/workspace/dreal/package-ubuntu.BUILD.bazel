@@ -2,7 +2,9 @@
 
 load(
     "@drake//tools/install:install.bzl",
+    "cmake_config",
     "install",
+    "install_cmake_config",
 )
 load(
     "@drake//tools/workspace/dreal:versions.bzl",
@@ -71,6 +73,14 @@ cc_library(
     ],
 )
 
+cmake_config(
+    package = "dreal",
+    script = "@drake//tools/workspace/dreal:package-create-cps.py",
+    version_file = _DREAL_BASE + "include/dreal/version.h",
+)
+
+install_cmake_config(package = "dreal")
+
 install(
     name = "install",
     data_strip_prefix = [
@@ -91,4 +101,5 @@ install(
         ],
     ),
     data_dest = "",
+    deps = [":install_cmake_config"],
 )
