@@ -131,6 +131,16 @@ TEST_F(SymbolicUnificationTest, AdditionFailureZeroCoeff) {
   EXPECT_PRED2(ExprEqual, rewriter(e4), e4 /* no change */);
 }
 
+TEST_F(SymbolicUnificationTest, AdditionIncompleteExample) {
+  // Rule: sin(x) + cos(y) + tan(z) => x + 2y + 3z.
+  const RewritingRule rule{sin(x_) + cos(y_) + tan(z_), x_ + 2 * y_ + 3 * z_};
+  const Rewriter rewriter = MakeRuleRewriter(rule);
+
+  // Fails to match the following with with the above rule (not addition).
+  const Expression e1{sin(a_) + tan(b_) + cos(c_)};
+  EXPECT_PRED2(ExprEqual, rewriter(e1), e1 /* no change */);
+}
+
 TEST_F(SymbolicUnificationTest, UnaryMinus) {
   // -x => x.
   const RewritingRule rule{-x_, x_};
