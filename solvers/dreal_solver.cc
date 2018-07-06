@@ -543,9 +543,9 @@ SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
     throw logic_error(
         "DrealSolver does not support linear-matrix-inequality constraints.");
   }
-  if (!prog.generic_costs().empty()) {
-    throw logic_error("DrealSolver does not support generic costs.");
-  }
+  // if (!prog.generic_costs().empty()) {
+  //   throw logic_error("DrealSolver does not support generic costs.");
+  // }
 
   // 1. Extracts the constraints from @p prog and constructs an equivalent
   // symbolic formula.

@@ -6,6 +6,7 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/common/proto/call_matlab.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/dreal_solver.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {
@@ -97,11 +98,13 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   // Initial guess is a straight line from the initial state to the final state.
   auto initial_state_trajectory =
       trajectories::PiecewisePolynomial<double>::FirstOrderHold(
-      {0, initial_duration}, {x0.get_value(), xf.get_value()});
+          {0, initial_duration}, {x0.get_value(), xf.get_value()});
 
   prog.SetInitialTrajectory(trajectories::PiecewisePolynomial<double>(),
                             initial_state_trajectory);
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  solvers::DrealSolver ds;
+  const auto result = ds.Solve(prog);
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.

@@ -52,10 +52,10 @@ class DirectCollocation : public MultipleShooting {
   ~DirectCollocation() override {}
 
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
-  const override;
+      const override;
 
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
-  const override;
+      const override;
 
  private:
   // Implements a running cost at all timesteps using trapezoidal integration.
@@ -106,6 +106,10 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
   void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
                 AutoDiffVecXd* xdot) const;
+
+  void dynamics(const VectorX<symbolic::Expression>& state,
+                const VectorX<symbolic::Expression>& input,
+                VectorX<symbolic::Expression>* xdot) const;
 
   std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;

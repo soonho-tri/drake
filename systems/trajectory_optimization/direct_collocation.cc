@@ -12,11 +12,14 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-using trajectories::PiecewisePolynomial;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
+using trajectories::PiecewisePolynomial;
+
+using symbolic::Expression;
+using symbolic::Variable;
 
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context)
@@ -64,9 +67,31 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
   *xdot = derivatives_->CopyToVector();
 }
 
+void DirectCollocationConstraint::dynamics(
+    const VectorX<symbolic::Expression>& state,
+    const VectorX<symbolic::Expression>& input,
+    VectorX<symbolic::Expression>* xdot) const {
+  auto system = system_->ToSymbolic();
+  auto context = system->CreateDefaultContext();
+  std::unique_ptr<ContinuousState<Expression>> derivatives =
+      system->AllocateTimeDerivatives();
+  std::cerr << "1\n";
+
+  if (context->get_num_input_ports() > 0) {
+    auto input_port_value = &context->FixInputPort(
+        0, system->AllocateInputVector(system->get_input_port(0)));
+    input_port_value->GetMutableVectorData<Expression>()->SetFromVector(input);
+  }
+  std::cerr << "2\n";
+  context->get_mutable_continuous_state().SetFromVector(state);
+  std::cerr << "3\n";
+  system->CalcTimeDerivatives(*context, derivatives.get());
+  std::cerr << "4\n";
+  *xdot = derivatives->CopyToVector();
+}
+
 void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd>& x,
-    Eigen::VectorXd* y) const {
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
@@ -110,10 +135,38 @@ void DirectCollocationConstraint::DoEval(
 }
 
 void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-    VectorX<symbolic::Expression>*) const {
-  throw std::logic_error(
-      "DirectCollocationConstraint does not support symbolic evaluation.");
+    const Eigen::Ref<const VectorX<Variable>>& x,
+    VectorX<Expression>* y) const {
+  DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
+
+  // Extract our input variables:
+  // h - current time (knot) value
+  // x0, x1 state vector at time steps k, k+1
+  // u0, u1 input vector at time steps k, k+1
+  const Expression h{x(0)};
+  const VectorX<Expression> x0{x.segment(1, num_states_)};
+  const VectorX<Expression> x1{x.segment(1 + num_states_, num_states_)};
+  const VectorX<Expression> u0{x.segment(1 + (2 * num_states_), num_inputs_)};
+  const VectorX<Expression> u1{
+      x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_)};
+
+  VectorX<Expression> xdot0;
+  dynamics(x0, u0, &xdot0);
+  const MatrixX<Expression> dxdot0 = Jacobian(xdot0, x.segment(1, num_states_));
+
+  VectorX<Expression> xdot1;
+  dynamics(x1, u1, &xdot1);
+  const MatrixX<Expression> dxdot1 =
+      Jacobian(xdot1, x.segment(1 + num_states_, num_states_));
+
+  // Cubic interpolation to get xcol and xdotcol.
+  const VectorX<Expression> xcol{0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1)};
+  const VectorX<Expression> xdotcol{-1.5 * (x0 - x1) / h -
+                                    .25 * (xdot0 + xdot1)};
+
+  VectorX<Expression> g;
+  dynamics(xcol, 0.5 * (u0 + u1), &g);
+  *y = xdotcol - g;
 }
 
 Binding<Constraint> AddDirectCollocationConstraint(
@@ -155,8 +208,8 @@ DirectCollocation::DirectCollocation(const System<double>* system,
   }
 
   // Add the dynamic constraints.
-  auto constraint = std::make_shared<DirectCollocationConstraint>(
-      *system, context);
+  auto constraint =
+      std::make_shared<DirectCollocationConstraint>(*system, context);
 
   DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) == num_states());
 
@@ -185,8 +238,7 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-PiecewisePolynomial<double>
-DirectCollocation::ReconstructInputTrajectory()
+PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory()
     const {
   DRAKE_DEMAND(context_->get_num_input_ports() > 0);
   Eigen::VectorXd times = GetSampleTimes();
@@ -200,8 +252,7 @@ DirectCollocation::ReconstructInputTrajectory()
   return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
 }
 
-PiecewisePolynomial<double>
-DirectCollocation::ReconstructStateTrajectory()
+PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());

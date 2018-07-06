@@ -824,11 +824,12 @@ drake_cc_googletest(
     timeout = "moderate",
     # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
     # builds (see #6223).
-    tags = ["snopt"],
+    # tags = ["snopt"],
     deps = [
         ":simple_car",
         "//common/proto:call_matlab",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:dreal_solver",
         "//systems/trajectory_optimization:direct_collocation",
     ],
 )
