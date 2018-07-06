@@ -576,9 +576,16 @@ SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
   optional<IntervalBox> result;
   if (costs.size() == 0) {
     // No cost functions in the problem. Call Checksatisfiability.
+    std::cerr << "Only Constraints" << constraints << std::endl;
     result = CheckSatisfiability(constraints, precision);
   } else {
     // Call Minimize with cost = ∑ᵢ costs(i).
+    std::cerr << "Minimize: "
+              << accumulate(costs.begin(), costs.end(),
+                            symbolic::Expression::Zero(),
+                            std::plus<symbolic::Expression>{})
+              << std::endl;
+    std::cerr << "Constraints: " << constraints << std::endl;
     result = Minimize(
         accumulate(costs.begin(), costs.end(), symbolic::Expression::Zero(),
                    std::plus<symbolic::Expression>{}),

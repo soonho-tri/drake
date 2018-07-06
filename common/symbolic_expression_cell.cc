@@ -1671,9 +1671,12 @@ Expression ExpressionMin::Substitute(const Substitution& s) const {
 
 Expression ExpressionMin::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& e1{get_first_argument()};
+    const Expression& e2{get_first_argument()};
+    return if_then_else(e1 < e2, e1.Differentiate(x), e2.Differentiate(x));
+    // ostringstream oss;
+    // Display(oss) << " is not differentiable with respect to " << x << ".";
+    // throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
   }
@@ -1706,9 +1709,12 @@ Expression ExpressionMax::Substitute(const Substitution& s) const {
 
 Expression ExpressionMax::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& e1{get_first_argument()};
+    const Expression& e2{get_first_argument()};
+    return if_then_else(e1 > e2, e1.Differentiate(x), e2.Differentiate(x));
+    // ostringstream oss;
+    // Display(oss) << " is not differentiable with respect to " << x << ".";
+    // throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
   }
@@ -1867,9 +1873,11 @@ Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
 
 Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    return if_then_else(f_cond_, e_then_.Differentiate(x),
+                        e_else_.Differentiate(x));
+    // ostringstream oss;
+    // Display(oss) << " is not differentiable with respect to " << x << ".";
+    // throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
   }
