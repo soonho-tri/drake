@@ -1,5 +1,4 @@
 # -*- python -*-
-
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -7,9 +6,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-
 package(default_visibility = ["//visibility:public"])
-
 drake_cc_package_library(
     name = "controllers",
     deps = [
@@ -27,12 +24,12 @@ drake_cc_package_library(
         ":setpoint",
         ":side",
         ":state_feedback_controller_interface",
+        ":tvLQR_costtogo",
         ":yaml_util",
         ":zmp_planner",
         ":zmp_util",
     ],
 )
-
 drake_cc_library(
     name = "state_feedback_controller_interface",
     hdrs = ["state_feedback_controller_interface.h"],
@@ -40,7 +37,6 @@ drake_cc_library(
         "//systems/framework:system",
     ],
 )
-
 drake_cc_library(
     name = "dynamic_programming",
     srcs = ["dynamic_programming.cc"],
@@ -54,7 +50,6 @@ drake_cc_library(
         "//systems/primitives:barycentric_system",
     ],
 )
-
 drake_cc_library(
     name = "inverse_dynamics",
     srcs = ["inverse_dynamics.cc"],
@@ -64,7 +59,6 @@ drake_cc_library(
         "//systems/framework",
     ],
 )
-
 drake_cc_library(
     name = "inverse_dynamics_controller",
     srcs = ["inverse_dynamics_controller.cc"],
@@ -81,7 +75,6 @@ drake_cc_library(
         "//systems/primitives:pass_through",
     ],
 )
-
 drake_cc_library(
     name = "linear_model_predictive_controller",
     srcs = ["linear_model_predictive_controller.cc"],
@@ -92,7 +85,6 @@ drake_cc_library(
         "//systems/trajectory_optimization:direct_transcription",
     ],
 )
-
 drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
@@ -105,7 +97,6 @@ drake_cc_library(
         "//systems/primitives:linear_system",
     ],
 )
-
 drake_cc_library(
     name = "pid_controller",
     srcs = ["pid_controller.cc"],
@@ -116,7 +107,6 @@ drake_cc_library(
         "//systems/primitives:matrix_gain",
     ],
 )
-
 drake_cc_library(
     name = "pid_controlled_system",
     srcs = ["pid_controlled_system.cc"],
@@ -128,7 +118,17 @@ drake_cc_library(
         "//systems/primitives:saturation",
     ],
 )
-
+drake_cc_library(
+    name = "tvLQR_costtogo",
+    srcs = ["tvLQR_costtogo.cc"],
+    hdrs = ["tvLQR_costtogo.h"],
+    deps = [
+        "//common/trajectories:trajectory",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/framework",
+        "//systems/primitives:linear_system",
+    ],
+)
 drake_cc_library(
     name = "setpoint",
     srcs = ["setpoint.cc"],
@@ -138,7 +138,6 @@ drake_cc_library(
         "//math:geometric_transform",
     ],
 )
-
 drake_cc_library(
     name = "control_util",
     srcs = ["controlUtil.cpp"],
@@ -154,14 +153,12 @@ drake_cc_library(
         "//util",
     ],
 )
-
 drake_cc_library(
     name = "side",
     srcs = ["side.cc"],
     hdrs = ["side.h"],
     deps = [],
 )
-
 drake_cc_library(
     name = "qp_common",
     srcs = [],
@@ -174,7 +171,6 @@ drake_cc_library(
         "//util",
     ],
 )
-
 drake_cc_library(
     name = "zmp_planner",
     srcs = ["zmp_planner.cc"],
@@ -185,7 +181,6 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
     ],
 )
-
 drake_cc_library(
     name = "zmp_util",
     srcs = ["zmpUtil.cpp"],
@@ -194,7 +189,6 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
     ],
 )
-
 drake_cc_library(
     name = "yaml_util",
     srcs = ["yaml_util.cc"],
@@ -209,7 +203,6 @@ drake_cc_library(
         "@yaml_cpp",
     ],
 )
-
 drake_cc_library(
     name = "polynomial_encode_decode",
     srcs = ["polynomial_encode_decode.cc"],
@@ -222,7 +215,6 @@ drake_cc_library(
         "//util",
     ],
 )
-
 # This library is empty unless Gurobi is available.
 drake_cc_library(
     name = "instantaneous_qp_controller",
@@ -251,9 +243,7 @@ drake_cc_library(
         "//util",
     ],
 )
-
 # === test/ ===
-
 drake_cc_library(
     name = "zmp_test_util",
     testonly = 1,
@@ -263,11 +253,10 @@ drake_cc_library(
         ":zmp_planner",
     ],
 )
-
 drake_cc_googletest(
     name = "dynamic_programming_test",
     # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "long",
+    timeout = "moderate",
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
@@ -277,7 +266,6 @@ drake_cc_googletest(
         "//systems/primitives:linear_system",
     ],
 )
-
 drake_cc_googletest(
     name = "polynomial_encode_decode_test",
     deps = [
@@ -286,7 +274,6 @@ drake_cc_googletest(
         "//common/trajectories:random_piecewise_polynomial",
     ],
 )
-
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
@@ -300,7 +287,6 @@ drake_cc_googletest(
         "//multibody/parsers",
     ],
 )
-
 drake_cc_googletest(
     name = "inverse_dynamics_controller_test",
     data = [
@@ -313,7 +299,6 @@ drake_cc_googletest(
         "//multibody/parsers",
     ],
 )
-
 drake_cc_googletest(
     name = "linear_model_predictive_controller_test",
     deps = [
@@ -323,7 +308,6 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
     ],
 )
-
 drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
@@ -331,7 +315,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
-
 drake_cc_googletest(
     name = "pid_controlled_system_test",
     deps = [
@@ -339,7 +322,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
-
 drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
@@ -347,7 +329,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
-
 drake_cc_googletest(
     name = "setpoint_test",
     srcs = ["test/setpoint_test.cc"],
@@ -356,7 +337,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
-
 drake_cc_googletest(
     name = "zmp_planner_test",
     deps = [
@@ -364,7 +344,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
-
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [
