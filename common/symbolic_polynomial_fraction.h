@@ -126,5 +126,42 @@ PolynomialFraction operator/(double c, const PolynomialFraction& f);
  * 1.
  */
 PolynomialFraction pow(const PolynomialFraction& f, int n);
+
+/**
+ * Provides the following operations
+ *  - Matrix<PolynomialFraction> * Matrix<Polynomial> =>
+ * Matrix<PolynomialFraction>
+ *  - Matrix<PolynomialFraction> * Matrix<double> => Matrix<PolynomialFraction>
+ *  - Matrix<Polynomial> * Matrix<PolynomialFraction> =>
+ * Matrix<PolynomialFraction>
+ *  - Matrix<double> * Matrix<PolynomialFraction> => Matrix<PolynomialFraction>
+ *
+ * @note that these operator overloadings are necessary even after providing
+ * Eigen::ScalarBinaryOpTraits. See
+ * https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+ * for more information
+ */
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    (std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
+      (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+       std::is_same<typename MatrixR::Scalar, double>::value)) ||
+     (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
+      (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+       std::is_same<typename MatrixL::Scalar, double>::value)),
+    Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const Eigen::MatrixBase<MatrixL>& lhs,
+          const Eigen::MatrixBase<MatrixR>& rhs) {
+  return lhs.template cast<PolynomialFraction>() *
+         rhs.template cast<PolynomialFraction>();
+}
+#endif
 }  // namespace symbolic
 }  // namespace drake
