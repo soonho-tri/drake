@@ -37,7 +37,8 @@ TEST_F(SymbolicPolynomialFractionTest, DefaultConstructor) {
   EXPECT_PRED2(PolyEqual, p.denominator(), polynomial_one_);
 }
 
-TEST_F(SymbolicPolynomialFractionTest, Constructor) {
+TEST_F(SymbolicPolynomialFractionTest, Constructor1) {
+  // Constructor with numerator and denominator
   PolynomialFraction f(polynomial_zero_, polynomial_one_);
   EXPECT_PRED2(PolyEqual, f.numerator(), polynomial_zero_);
   EXPECT_PRED2(PolyEqual, f.denominator(), polynomial_one_);
@@ -46,6 +47,21 @@ TEST_F(SymbolicPolynomialFractionTest, Constructor) {
   PolynomialFraction f_p1_p2(p1, p2);
   EXPECT_PRED2(PolyEqual, f_p1_p2.numerator(), p1);
   EXPECT_PRED2(PolyEqual, f_p1_p2.denominator(), p2);
+}
+
+TEST_F(SymbolicPolynomialFractionTest, Constructor2) {
+  // Constructor with numerator only.
+  PolynomialFraction f1(p1_);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), p1_);
+  EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
+}
+
+TEST_F(SymbolicPolynomialFractionTest, Constructor3) {
+  // Constructor with a double scalar.
+  const double c = 5;
+  PolynomialFraction f1(c);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), c * polynomial_one_);
+  EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 
 TEST_F(SymbolicPolynomialFractionTest, ConstructorWithError) {

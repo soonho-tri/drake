@@ -47,6 +47,20 @@ class PolynomialFraction {
   PolynomialFraction(const Polynomial& numerator,
                      const Polynomial& denominator);
 
+  /**
+   * Constructs a polynomial fraction p / 1. Note that we use 1 as the
+   * denominator.
+   * @param p The numerator of the fraction.
+   */
+  PolynomialFraction(const Polynomial& p);
+
+  /**
+   * Constructs a polynomial fraction c / 1. Note that we use 1 as the
+   * denominator.
+   * @param c The numerator of the fraction.
+   */
+  PolynomialFraction(double c);
+
   ~PolynomialFraction() = default;
 
   /// Getter for the numerator.
@@ -145,23 +159,85 @@ PolynomialFraction pow(const PolynomialFraction& f, int n);
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
+operator*(const Eigen::MatrixBase<MatrixL>& lhs,
+          const Eigen::MatrixBase<MatrixR>& rhs);
 #else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
-    (std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
-      (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
-       std::is_same<typename MatrixR::Scalar, double>::value)) ||
-     (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
-      (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
-       std::is_same<typename MatrixL::Scalar, double>::value)),
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        ((std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
+          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixR::Scalar, double>::value)) ||
+         (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
+          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixL::Scalar, double>::value))),
     Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
-operator*(const Eigen::MatrixBase<MatrixL>& lhs,
-          const Eigen::MatrixBase<MatrixR>& rhs) {
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<PolynomialFraction>() *
          rhs.template cast<PolynomialFraction>();
 }
 #endif
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+
+// Defines Eigen traits needed for Matrix<drake::symbolic::PolynomialFraction>.
+template <>
+struct NumTraits<drake::symbolic::PolynomialFraction>
+    : GenericNumTraits<drake::symbolic::PolynomialFraction> {
+  static inline int digits10() { return 0; }
+};
+
+// Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType.
+#define DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType, BinaryOp,    \
+                                               ResultType)                    \
+  template <>                                                                 \
+  struct ScalarBinaryOpTraits<LhsType, RhsType, BinaryOp<LhsType, RhsType>> { \
+    enum { Defined = 1 };                                                     \
+    typedef ResultType ReturnType;                                            \
+  };
+
+// Informs Eigen that LhsType op RhsType gets ResultType
+// where op ∈ {+, -, *, /, conj_product}.
+#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(  \
+    LhsType, RhsType, ResultType)                                             \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType,                    \
+                                         internal::scalar_sum_op, ResultType) \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_difference_op, ResultType)           \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_product_op, ResultType)              \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_conj_product_op, ResultType)
+
+// Informs Eigen that PolynomialFraction op Polynomial gets PolynomialFraction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::PolynomialFraction, drake::symbolic::Polynomial,
+    drake::symbolic::PolynomialFraction)
+
+// Informs Eigen that Polynomial op PolynomialFraction gets PolynomialFraction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Polynomial, drake::symbolic::PolynomialFraction,
+    drake::symbolic::PolynomialFraction)
+
+// Informs Eigen that double op PolynomialFraction gets PolynomialFraction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    double, drake::symbolic::PolynomialFraction,
+    drake::symbolic::PolynomialFraction)
+
+// Informs Eigen that PolynomialFraction op double gets PolynomialFraction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::PolynomialFraction, double,
+    drake::symbolic::PolynomialFraction)
+#undef DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS
+#undef DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

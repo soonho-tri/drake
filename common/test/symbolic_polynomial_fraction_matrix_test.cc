@@ -80,22 +80,161 @@ CompareMatrixWithPolynomialFraction(const Eigen::MatrixBase<Derived1>& m1,
     }
   }
 }
-TEST_F(SymbolicPolynomialFractionMatrixTest, Addition) {
-  // matrix + matrix.
+
+template <typename Derived1, typename Derived2>
+void CheckAddition(const Eigen::MatrixBase<Derived1>& m1,
+                   const Eigen::MatrixBase<Derived2>& m2) {
+  DRAKE_DEMAND(m1.rows() == m2.rows());
+  DRAKE_DEMAND(m1.cols() == m2.cols());
+  MatrixX<PolynomialFraction> m1_add_m2_expected(m1.rows(), m1.cols());
+  for (int i = 0; i < m1.rows(); ++i) {
+    for (int j = 0; j < m1.cols(); ++j) {
+      m1_add_m2_expected(i, j) = m1(i, j) + m2(i, j);
+    }
+  }
+  auto m1_add_m2 = m1 + m2;
+  static_assert(std::is_same<typename decltype(m1_add_m2)::Scalar,
+                             PolynomialFraction>::value,
+                "m1 + m2 should have scalar type PolynomialFraction.");
+  CompareMatrixWithPolynomialFraction(m1_add_m2, m1_add_m2_expected);
+  CompareMatrixWithPolynomialFraction(m2 + m1, m1_add_m2_expected);
+}
+
+template <typename Derived1, typename Derived2>
+void CheckSubtraction(const Eigen::MatrixBase<Derived1>& m1,
+                      const Eigen::MatrixBase<Derived2>& m2) {
+  DRAKE_DEMAND(m1.rows() == m2.rows());
+  DRAKE_DEMAND(m1.cols() == m2.cols());
+  MatrixX<PolynomialFraction> m1_minus_m2_expected(m1.rows(), m1.cols());
+  for (int i = 0; i < m1.rows(); ++i) {
+    for (int j = 0; j < m1.cols(); ++j) {
+      m1_minus_m2_expected(i, j) = m1(i, j) - m2(i, j);
+    }
+  }
+  auto m1_minus_m2 = m1 - m2;
+  static_assert(std::is_same<typename decltype(m1_minus_m2)::Scalar,
+                             PolynomialFraction>::value,
+                "m1 - m2 should have scalar type PolynomialFraction.");
+  CompareMatrixWithPolynomialFraction(m1_minus_m2, m1_minus_m2_expected);
+  CompareMatrixWithPolynomialFraction(m2 - m1, -m1_minus_m2_expected);
+}
+
+template <typename Derived1, typename Derived2>
+void CheckProduct(const Eigen::MatrixBase<Derived1>& m1,
+                  const Eigen::MatrixBase<Derived2>& m2) {
+  DRAKE_DEMAND(m1.cols() == m2.rows());
+  MatrixX<PolynomialFraction> m1_times_m2_expected(m1.rows(), m2.cols());
+  for (int i = 0; i < m1.rows(); ++i) {
+    for (int j = 0; j < m2.cols(); ++j) {
+      for (int k = 0; k < m1.cols(); ++k) {
+        m1_times_m2_expected(i, j) += m1(i, k) * m2(k, j);
+      }
+    }
+  }
+  auto m1_times_m2 = m1 * m2;
+
+  static_assert(std::is_same<typename decltype(m1_times_m2)::Scalar,
+                             PolynomialFraction>::value,
+                "m1 * m2 should have scalar type PolynomialFraction.");
+  CompareMatrixWithPolynomialFraction(m1_times_m2, m1_times_m2_expected);
+}
+
+template <typename Derived1, typename Derived2>
+void CheckMatrixMatrixBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
+                                       const Eigen::MatrixBase<Derived2>& m2) {
+  CheckAddition(m1, m2);
+  CheckSubtraction(m1, m2);
+  CheckProduct(m1, m2);
+  CheckProduct(m2, m1);
+}
+
+template <typename Derived1, typename Derived2>
+typename std::enable_if<is_eigen_vector<Derived2>::value>::type
+CheckMatrixVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
+                                  const Eigen::MatrixBase<Derived2>& m2) {
+  //CheckProduct(m1, m2);
+}
+
+template <typename Derived1, typename Derived2>
+typename std::enable_if<is_eigen_vector<Derived1>::value &&
+                        is_eigen_vector<Derived2>::value>::type
+CheckVectorVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
+                                  const Eigen::MatrixBase<Derived2>& m2) {
+  CheckAddition(m1, m2);
+  CheckSubtraction(m1, m2);
+  // CheckConjugateProdocut(m1, m2);
+}
+
+TEST_F(SymbolicPolynomialFractionMatrixTest,
+       PolynomialFractionOpPolynomialFraction) {
   Matrix2<PolynomialFraction> M2;
   M2 << PolynomialFraction(p2_, p3_ + 2 * p4_),
       PolynomialFraction(p1_ + p2_, 2 * p3_),
       PolynomialFraction(p1_, p4_ - p5_), PolynomialFraction(p2_, p3_ * p6_);
-  Matrix2<PolynomialFraction> M_plus_M2_expected;
-  for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < 2; ++j) {
-      M_plus_M2_expected(i, j) = M_poly_fraction_static_(i, j) + M2(i, j);
-    }
-  }
-  CompareMatrixWithPolynomialFraction(M_poly_fraction_static_ + M2,
-                                      M_plus_M2_expected);
-  CompareMatrixWithPolynomialFraction(M_poly_fraction_dynamic_ + M2,
-                                      M_plus_M2_expected);
+  auto m1_times_m2 = M_poly_fraction_static_ * M2;
+  // map1 stores the monomial-to-coefficient map in the denominator of m1 x m2.
+  const auto& map1 = m1_times_m2(0, 0).denominator().monomial_to_coefficient_map();
+  // Compute the denominator in the (0, 0) entry of m1 x m2 by hand.
+  const Polynomial m1_times_m2_00_denominator =
+      M_poly_fraction_static_(0, 0).denominator() * M2(0, 0).denominator() *
+      M_poly_fraction_static_(0, 1).denominator() * M2(1, 0).denominator();
+  // First make sure that the denominator are the same.
+  std::cout << "m1_times_m2(0, 0).denominator() - m1_times_m2_00_denominator: " << m1_times_m2(0, 0).denominator() - m1_times_m2_00_denominator << "\n";
+  const auto& map2 = m1_times_m2_00_denominator.monomial_to_coefficient_map();
+  EXPECT_EQ(map1.size(), map2.size());
+
+  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M2);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M2);
+  Vector2<PolynomialFraction> v2(PolynomialFraction(p1_, p4_ + 2 * p5_),
+                                 PolynomialFraction(p3_, p2_ - p1_));
+  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v2);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v2);
+
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_,
+                                    v_poly_fraction_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_,
+                                    v_poly_fraction_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_,
+                                    v_poly_fraction_dynamic_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_,
+                                    v_poly_fraction_dynamic_);*/
+}
+
+TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpPolynomial) {
+  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_poly_static_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_poly_dynamic_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_static_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_dynamic_);
+
+  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_static_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_dynamic_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v_poly_static_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v_poly_dynamic_);
+
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_poly_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_poly_dynamic_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_, v_poly_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_, v_poly_dynamic_);*/
+}
+
+TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpDouble) {
+  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_double_static_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_double_dynamic_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_double_static_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_,
+                                    M_double_dynamic_);
+
+  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_double_static_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_double_dynamic_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v_double_static_);
+  CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_,
+                                    v_double_dynamic_);
+
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_double_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_double_dynamic_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_, v_double_static_);
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_,
+                                    v_double_dynamic_);*/
 }
 }  // namespace symbolic
 }  // namespace drake

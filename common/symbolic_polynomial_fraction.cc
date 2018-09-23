@@ -17,6 +17,12 @@ PolynomialFraction::PolynomialFraction(const Polynomial& numerator,
   CheckInvariant();
 }
 
+PolynomialFraction::PolynomialFraction(const Polynomial& p)
+    : PolynomialFraction(p, Polynomial(1)) {}
+
+PolynomialFraction::PolynomialFraction(double c)
+    : PolynomialFraction(Polynomial(c), Polynomial(1)) {}
+
 bool PolynomialFraction::EqualTo(const PolynomialFraction& f) const {
   return numerator_.EqualTo(f.numerator()) &&
          denominator_.EqualTo(f.denominator());
