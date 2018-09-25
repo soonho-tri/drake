@@ -76,7 +76,10 @@ CompareMatrixWithPolynomialFraction(const Eigen::MatrixBase<Derived1>& m1,
   EXPECT_EQ(m1.cols(), m2.cols());
   for (int i = 0; i < m1.rows(); ++i) {
     for (int j = 0; j < m1.cols(); ++j) {
-      EXPECT_PRED2(PolyFractionEqual, m1(i, j), m2(i, j));
+      EXPECT_PRED2(test::PolyEqualAfterExpansion, m1(i, j).numerator(),
+                   m2(i, j).numerator());
+      EXPECT_PRED2(test::PolyEqualAfterExpansion, m1(i, j).denominator(),
+                   m2(i, j).denominator());
     }
   }
 }
@@ -152,7 +155,7 @@ template <typename Derived1, typename Derived2>
 typename std::enable_if<is_eigen_vector<Derived2>::value>::type
 CheckMatrixVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
                                   const Eigen::MatrixBase<Derived2>& m2) {
-  //CheckProduct(m1, m2);
+  // CheckProduct(m1, m2);
 }
 
 template <typename Derived1, typename Derived2>
@@ -171,19 +174,8 @@ TEST_F(SymbolicPolynomialFractionMatrixTest,
   M2 << PolynomialFraction(p2_, p3_ + 2 * p4_),
       PolynomialFraction(p1_ + p2_, 2 * p3_),
       PolynomialFraction(p1_, p4_ - p5_), PolynomialFraction(p2_, p3_ * p6_);
-  auto m1_times_m2 = M_poly_fraction_static_ * M2;
-  // map1 stores the monomial-to-coefficient map in the denominator of m1 x m2.
-  const auto& map1 = m1_times_m2(0, 0).denominator().monomial_to_coefficient_map();
-  // Compute the denominator in the (0, 0) entry of m1 x m2 by hand.
-  const Polynomial m1_times_m2_00_denominator =
-      M_poly_fraction_static_(0, 0).denominator() * M2(0, 0).denominator() *
-      M_poly_fraction_static_(0, 1).denominator() * M2(1, 0).denominator();
-  // First make sure that the denominator are the same.
-  std::cout << "m1_times_m2(0, 0).denominator() - m1_times_m2_00_denominator: " << m1_times_m2(0, 0).denominator() - m1_times_m2_00_denominator << "\n";
-  const auto& map2 = m1_times_m2_00_denominator.monomial_to_coefficient_map();
-  EXPECT_EQ(map1.size(), map2.size());
 
-  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M2);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M2);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M2);
   Vector2<PolynomialFraction> v2(PolynomialFraction(p1_, p4_ + 2 * p5_),
                                  PolynomialFraction(p3_, p2_ - p1_));
@@ -197,16 +189,18 @@ TEST_F(SymbolicPolynomialFractionMatrixTest,
   CheckMatrixVectorBinaryOperations(M_poly_fraction_static_,
                                     v_poly_fraction_dynamic_);
   CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_,
-                                    v_poly_fraction_dynamic_);*/
+                                    v_poly_fraction_dynamic_);
 }
 
 TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpPolynomial) {
-  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_poly_static_);
+  CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_poly_static_);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_poly_dynamic_);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_static_);
+  // The 3 lines above are fine. But when we have the next line, we run into
+  // compiler issue.
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_dynamic_);
 
-  CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_static_);
+  /*CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_static_);
   CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_dynamic_);
   CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v_poly_static_);
   CheckVectorVectorBinaryOperations(v_poly_fraction_dynamic_, v_poly_dynamic_);
@@ -214,11 +208,13 @@ TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpPolynomial) {
   CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_poly_static_);
   CheckMatrixVectorBinaryOperations(M_poly_fraction_static_, v_poly_dynamic_);
   CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_, v_poly_static_);
-  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_, v_poly_dynamic_);*/
+  CheckMatrixVectorBinaryOperations(M_poly_fraction_dynamic_,
+  v_poly_dynamic_);*/
 }
 
 TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpDouble) {
-  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_double_static_);
+  /*CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_,
+  M_double_static_);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_static_, M_double_dynamic_);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_double_static_);
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_,
