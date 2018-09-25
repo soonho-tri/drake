@@ -7,6 +7,9 @@
 
 #include <ostream>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -52,14 +55,14 @@ class PolynomialFraction {
    * denominator.
    * @param p The numerator of the fraction.
    */
-  PolynomialFraction(const Polynomial& p);
+  explicit PolynomialFraction(const Polynomial& p);
 
   /**
    * Constructs a polynomial fraction c / 1. Note that we use 1 as the
    * denominator.
    * @param c The numerator of the fraction.
    */
-  PolynomialFraction(double c);
+  explicit PolynomialFraction(double c);
 
   ~PolynomialFraction() = default;
 
@@ -155,30 +158,38 @@ PolynomialFraction pow(const PolynomialFraction& f, int n);
  * https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
  * for more information
  */
-#if defined(DRAKE_DOXYGEN_CXX)
-template <typename MatrixL, typename MatrixR>
-Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const Eigen::MatrixBase<MatrixL>& lhs,
-          const Eigen::MatrixBase<MatrixR>& rhs);
-#else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        ((std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
-          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixR::Scalar, double>::value)) ||
-         (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
-          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixL::Scalar, double>::value))),
+    ((std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
+      (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+       std::is_same<typename MatrixR::Scalar, double>::value)) ||
+     (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
+      (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+       std::is_same<typename MatrixL::Scalar, double>::value))),
     Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  std::cerr << "Hit\n";
   return lhs.template cast<PolynomialFraction>() *
          rhs.template cast<PolynomialFraction>();
 }
-#endif
+
+// template <typename MatrixL, typename MatrixR>
+// typename std::enable_if<
+//     !(((std::is_same<typename MatrixL::Scalar, PolynomialFraction>::value &&
+//         (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+//          std::is_same<typename MatrixR::Scalar, double>::value)) ||
+//        (std::is_same<typename MatrixR::Scalar, PolynomialFraction>::value &&
+//         (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+//          std::is_same<typename MatrixL::Scalar, double>::value)))),
+//     Eigen::Matrix<PolynomialFraction, MatrixL::RowsAtCompileTime,
+//                   MatrixR::ColsAtCompileTime>>::type
+// operator*(const MatrixL& lhs, const MatrixR& rhs) {
+//   std::cerr << "NoHit\n";
+//   return lhs.template cast<PolynomialFraction>() *
+//          rhs.template cast<PolynomialFraction>();
+// }
+
 }  // namespace symbolic
 }  // namespace drake
 
@@ -203,7 +214,7 @@ struct NumTraits<drake::symbolic::PolynomialFraction>
 
 // Informs Eigen that LhsType op RhsType gets ResultType
 // where op ∈ {+, -, *, /, conj_product}.
-#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(  \
+#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(           \
     LhsType, RhsType, ResultType)                                             \
   DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType,                    \
                                          internal::scalar_sum_op, ResultType) \

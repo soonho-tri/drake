@@ -138,17 +138,55 @@ void CheckProduct(const Eigen::MatrixBase<Derived1>& m1,
   static_assert(std::is_same<typename decltype(m1 * m2)::Scalar,
                              PolynomialFraction>::value,
                 "m1 * m2 should have scalar type PolynomialFraction.");
+
+  std::cerr << "------------------------------------------------------\n";
+
+  std::cerr << "std::is_base_of<Eigen::MatrixBase<Derived1>, Derived1>::value\t"
+            << std::is_base_of<Eigen::MatrixBase<Derived1>, Derived1>::value
+            << std::endl;
+
+  std::cerr << "std::is_base_of<Eigen::MatrixBase<Derived2>, Derived2>::value\t"
+            << std::is_base_of<Eigen::MatrixBase<Derived2>, Derived2>::value
+            << std::endl;
+
+  std::cerr
+      << "std::is_same<typename Derived1::Scalar, PolynomialFraction>::value\t"
+      << std::is_same<typename Derived1::Scalar, PolynomialFraction>::value
+      << std::endl;
+
+  std::cerr
+      << "std::is_same<typename Derived2::Scalar, PolynomialFraction>::value\t"
+      << std::is_same<typename Derived2::Scalar, PolynomialFraction>::value
+      << std::endl;
+
+  std::cerr << "CON = "
+            << (std::is_base_of<Eigen::MatrixBase<Derived1>, Derived1>::value &&
+                std::is_base_of<Eigen::MatrixBase<Derived2>, Derived2>::value &&
+                ((std::is_same<typename Derived1::Scalar,
+                               PolynomialFraction>::value &&
+                  (std::is_same<typename Derived2::Scalar, Polynomial>::value ||
+                   std::is_same<typename Derived2::Scalar, double>::value)) ||
+                 (std::is_same<typename Derived2::Scalar,
+                               PolynomialFraction>::value &&
+                  (std::is_same<typename Derived1::Scalar, Polynomial>::value ||
+                   std::is_same<typename Derived1::Scalar, double>::value))))
+            << std::endl;
+
+  // const MatrixX<PolynomialFraction> m1_times_m2 = mul(m1, m2);
   const MatrixX<PolynomialFraction> m1_times_m2 = m1 * m2;
+  // const MatrixX<PolynomialFraction> m1_times_m2 =
+  //     m1.template cast<PolynomialFraction>() *
+  //     m2.template cast<PolynomialFraction>();
   CompareMatrixWithPolynomialFraction(m1_times_m2, m1_times_m2_expected);
 }
 
 template <typename Derived1, typename Derived2>
 void CheckMatrixMatrixBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
                                        const Eigen::MatrixBase<Derived2>& m2) {
-  CheckAddition(m1, m2);
-  CheckSubtraction(m1, m2);
+  // CheckAddition(m1, m2);
+  // CheckSubtraction(m1, m2);
   CheckProduct(m1, m2);
-  //CheckProduct(m2, m1);
+  CheckProduct(m2, m1);
 }
 
 template <typename Derived1, typename Derived2>
@@ -198,6 +236,7 @@ TEST_F(SymbolicPolynomialFractionMatrixTest, PolynomialFractionOpPolynomial) {
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_static_);
   // The 3 lines above are fine. But when we have the next line, we run into
   // compiler issue.
+
   CheckMatrixMatrixBinaryOperations(M_poly_fraction_dynamic_, M_poly_dynamic_);
 
   /*CheckVectorVectorBinaryOperations(v_poly_fraction_static_, v_poly_static_);

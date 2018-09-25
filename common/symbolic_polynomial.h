@@ -220,24 +220,24 @@ Polynomial pow(const Polynomial& p, int n);
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
 /// Provides the following seven operations:
-///  - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
-///  - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
-///  - Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
-///  - Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
+///  - Matrix<Polynomial> * Matrix<Monomial>   => Matrix<Polynomial>
+///  - Matrix<Polynomial> * Matrix<double>     => Matrix<Polynomial>
+///  - Matrix<Monomial>   * Matrix<Polynomial> => Matrix<Polynomial>
+///  - Matrix<Monomial>   * Matrix<Monomial>   => Matrix<Polynomial>
+///  - Matrix<Monomial>   * Matrix<double>     => Matrix<Polynomial>
+///  - Matrix<double>     * Matrix<Polynomial> => Matrix<Polynomial>
+///  - Matrix<double>     * Matrix<Monomial>   => Matrix<Polynomial>
 ///
 /// @note that these operator overloadings are necessary even after providing
 /// Eigen::ScalarBinaryOpTraits. See
 /// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
 /// for more information.
-#if defined(DRAKE_DOXYGEN_CXX)
-template <typename MatrixL, typename MatrixR>
-Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
-#else
+// #if defined(DRAKE_DOXYGEN_CXX)
+// template <typename MatrixL, typename MatrixR>
+// Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+//               MatrixR::ColsAtCompileTime>
+// operator*(const MatrixL& lhs, const MatrixR& rhs);
+// #else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
@@ -265,7 +265,7 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   // no-op.
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
-#endif
+// #endif
 }  // namespace symbolic
 }  // namespace drake
 
