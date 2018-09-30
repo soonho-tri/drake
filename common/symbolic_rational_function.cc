@@ -66,6 +66,11 @@ void RationalFunction::CheckIndeterminates() const {
 }
 
 RationalFunction& RationalFunction::operator+=(const RationalFunction& f) {
+  // If f and this have the same denominator, then just adds its numerator.
+  if (f.denominator().EqualTo(denominator_)) {
+    numerator_ += f.numerator_;
+    return *this;
+  }
   numerator_ = numerator_ * f.denominator() + denominator_ * f.numerator();
   denominator_ *= f.denominator();
   return *this;

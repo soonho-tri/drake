@@ -61,9 +61,20 @@ class RationalForwardKinematics {
 
   // Compute the pose of the link, connected to its parent link through a
   // revolute joint.
-  void CalcLinkPoseWithRevoluteJoint(
-      BodyIndex body_index,
-      const RevoluteMobilizer<double>* revolute_mobilizer);
+  // We will first compute the link pose as multilinear polynomials, with
+  // indeterminates cos_delta and sin_delta, representing cos(Δθ) and sin(Δθ)
+  // respectively. We will then replace cos_delta and sin_delta in the link
+  // pose with rational functions (1-t^2)/(1+t^2) and 2t/(1+t^2) respectively.
+  // The reason why we don't use RationalFunction directly, is that currently
+  // our rational function can't find the common factor in the denominator,
+  // namely the sum between rational functions p1(x) / (q1(x) * r(x)) + p2(x) /
+  // r(x) is computed as (p1(x) * r(x) + p2(x) * q1(x) * r(x)) / (q1(x) * r(x) *
+  // r(x)), without handling the common factor r(x) in the denominator.
+  void CalcLinkPoseAsMultilinearPolynomialWithRevoluteJoint(
+      BodyIndex body_index, const RevoluteMobilizer<double>* revolute_mobilizer,
+      VectorX<symbolic::Variable>* cos_delta,
+      VectorX<symbolic::Variable>* sin_delta,
+      VectorX<symbolic::Variable>* t_angle);
 
   // Compute the pose of the link, connected to its parent link through a
   // weld joint.
@@ -85,5 +96,16 @@ class RationalForwardKinematics {
   // frame W. Each entry in R_WB_[i] is a rational function of t_;
   std::vector<Matrix3<symbolic::RationalFunction>> R_WB_;
 };
+
+/** If e is a multilinear polynomial of cos_delta and sin_delta, and no
+ * cos_delta(i) and sin_delta(i) appear in the same monomial, then we replace
+ * cos_delta(i) with (1-t_angle(i)^2)/(1+t_angle(i)^2), and sin_delta(i) with
+ * 2t_angle(i)/(1+t_angle(i)^2), and get a rational polynomial of t.
+ */
+void ReplaceCosAndSinWithRationalFunction(
+    const symbolic::Expression& e, const VectorX<symbolic::Variable>& cos_delta,
+    const VectorX<symbolic::Variable>& sin_delta,
+    const VectorX<symbolic::Variable>& t_angle, const symbolic::Variables& t,
+    symbolic::RationalFunction* e_rational);
 }  // namespace multibody
 }  // namespace drake

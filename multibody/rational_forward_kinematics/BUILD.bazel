@@ -34,6 +34,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
         "//multibody/multibody_tree/multibody_plant",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
     ],
