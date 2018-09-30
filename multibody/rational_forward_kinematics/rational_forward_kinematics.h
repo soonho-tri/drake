@@ -1,7 +1,12 @@
 #pragma once
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/common/symbolic.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/prismatic_mobilizer.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
+#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
+#include "drake/multibody/multibody_tree/weld_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -29,6 +34,20 @@ class RationalForwardKinematics {
 
   explicit RationalForwardKinematics(const MultibodyTree<double>& tree);
 
+  const Vector3<symbolic::RationalFunction>& p_WB(int body_index) const {
+    return p_WB_[body_index];
+  }
+
+  const Matrix3<symbolic::RationalFunction>& R_WB(int body_index) const {
+    return R_WB_[body_index];
+  }
+
+  const MultibodyTree<double>& tree() const { return tree_; }
+
+  const VectorX<symbolic::Variable>& t() const { return t_; }
+
+  const VectorX<symbolic::Variable>& q_star() const { return q_star_; }
+
  private:
   // Compute the pose of each link as fractional functions of t.
   // We will set up the indeterminates t also.
@@ -39,6 +58,17 @@ class RationalForwardKinematics {
   // matrix.
   // A gimbal joint requires 9 t, for the rotation matrix.
   void CalcLinkPoses();
+
+  // Compute the pose of the link, connected to its parent link through a
+  // revolute joint.
+  void CalcLinkPoseWithRevoluteJoint(
+      BodyIndex body_index,
+      const RevoluteMobilizer<double>* revolute_mobilizer);
+
+  // Compute the pose of the link, connected to its parent link through a
+  // weld joint.
+  void CalcLinkPoseWithWeldJoint(BodyIndex body_index,
+                                 const WeldMobilizer<double>* weld_mobilizer);
 
   const MultibodyTree<double>& tree_;
   // The variables used in computing the pose as rational functions. t_ are the
