@@ -180,10 +180,10 @@ Expression Expression::Expand() const {
   return ptr_->Expand();
 }
 
-Expression Expression::Substitute(const Variable& var,
-                                  const Expression& e) const {
+Expression Expression::Substitute(const Expression& e1,
+                                  const Expression& e2) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Substitute({{var, e}});
+  return ptr_->Substitute({{e1, e2}});
 }
 
 Expression Expression::Substitute(const Substitution& s) const {

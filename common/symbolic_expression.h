@@ -104,7 +104,7 @@ class Expression;
 
 // Substitution is a map from a Variable to a symbolic expression. It is used in
 // Expression::Substitute and Formula::Substitute methods as an argument.
-using Substitution = std::unordered_map<Variable, Expression>;
+using Substitution = std::unordered_map<Expression, Expression>;
 
 /** Represents a symbolic form of an expression.
 
@@ -261,7 +261,7 @@ class Expression {
    * with @p e.
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Expression Substitute(const Variable& var, const Expression& e) const;
+  Expression Substitute(const Expression& e1, const Expression& e2) const;
 
   /** Returns a copy of this expression replacing all occurrences of the
    * variables in @p s with corresponding expressions in @p s. Note that the
