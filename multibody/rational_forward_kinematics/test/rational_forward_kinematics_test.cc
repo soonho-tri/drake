@@ -57,9 +57,13 @@ GTEST_TEST(RationalForwardKinematics, ReplaceCosAndSinWithRationalFunction) {
       symbolic::RationalFunction(Polynomial(2 * t_angle(0)),
                                  Polynomial(1 + t_angle(0) * t_angle(0))));
   // test 1.
-  CheckReplaceCosAndSinWithRationalFunction(1, cos_delta, sin_delta, t_angle,
-                                            symbolic::Variables(t_angle),
+  CheckReplaceCosAndSinWithRationalFunction(1, cos_delta, sin_delta, t_angle, t,
                                             symbolic::RationalFunction(1));
+
+  // test a + b
+  CheckReplaceCosAndSinWithRationalFunction(
+      a + b, cos_delta, sin_delta, t_angle, t,
+      RationalFunction(Polynomial(a + b, t)));
 
   // test 1 + cos(delta_q(0))
   CheckReplaceCosAndSinWithRationalFunction(
@@ -111,7 +115,7 @@ GTEST_TEST(RationalForwardKinematics, ReplaceCosAndSinWithRationalFunction) {
                      (1 + t_angle(1) * t_angle(1)) *
                      (1 + t_angle(2) * t_angle(2)))));
 }
-/*
+
 std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
   const std::string& iiwa_sdf_name) {
 const std::string file_path =
@@ -180,7 +184,7 @@ EXPECT_EQ(rational_forward_kinematics.t().rows(), 7);
 CheckRationalForwardKinematics(
     rational_forward_kinematics, Eigen::VectorXd::Zero(7),
     Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
-}*/
+}
 
 }  // namespace
 }  // namespace multibody
