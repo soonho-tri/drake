@@ -45,6 +45,12 @@ void CalcChildPose(const Matrix3<Scalar2>& R_WP, const Vector3<Scalar2>& p_WP,
   const Vector3<double> p_MC = X_MC.translation();
   *R_WC = R_WM * R_MC;
   *p_WC = R_WM * p_MC + p_WM;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      (*R_WC)(i, j) = (*R_WC)(i, j).Expand();
+    }
+    (*p_WC)(i) = (*p_WC)(i).Expand();
+  }
 }
 
 template <typename T>
