@@ -4,6 +4,7 @@ namespace drake {
 namespace multibody {
 using symbolic::Polynomial;
 using symbolic::RationalFunction;
+using symbolic::Expression;
 RationalForwardKinematics::RationalForwardKinematics(
     const MultibodyTree<double>& tree)
     : tree_(tree),
@@ -46,14 +47,15 @@ void CalcChildPose(const Matrix3<Scalar2>& R_WP, const Vector3<Scalar2>& p_WP,
   *p_WC = R_WM * p_MC + p_WM;
 }
 
+template <typename T>
 void RationalForwardKinematics::
     CalcLinkPoseAsMultilinearPolynomialWithRevoluteJoint(
         const RevoluteMobilizer<double>* revolute_mobilizer,
-        const Matrix3<Polynomial>& R_WP, const Vector3<Polynomial>& p_WP,
+        const Matrix3<T>& R_WP, const Vector3<T>& p_WP,
         VectorX<symbolic::Variable>* cos_delta,
         VectorX<symbolic::Variable>* sin_delta,
-        VectorX<symbolic::Variable>* t_angles, Matrix3<Polynomial>* R_WC,
-        Vector3<Polynomial>* p_WC) {
+        VectorX<symbolic::Variable>* t_angles, Matrix3<T>* R_WC,
+        Vector3<T>* p_WC) {
   const Eigen::Vector3d& axis_F = revolute_mobilizer->revolute_axis();
   // clang-format off
       const Eigen::Matrix3d A_F =
@@ -78,28 +80,24 @@ void RationalForwardKinematics::
   (*sin_delta)(sin_delta->size() - 1) = sin_delta_i;
   const symbolic::Variable& theta_star =
       q_star_(revolute_mobilizer->get_topology().positions_start);
-  const symbolic::Polynomial cos_angle(
-      cos(theta_star) * cos_delta_i - sin(theta_star) * sin_delta_i,
-      {cos_delta_i, sin_delta_i});
-  const symbolic::Polynomial sin_angle(
-      sin(theta_star) * cos_delta_i + cos(theta_star) * sin_delta_i,
-      {cos_delta_i, sin_delta_i});
+  const symbolic::Expression cos_angle(cos(theta_star) * cos_delta_i -
+                                       sin(theta_star) * sin_delta_i);
+  const symbolic::Expression sin_angle(sin(theta_star) * cos_delta_i +
+                                       cos(theta_star) * sin_delta_i);
   // Frame F is the inboard frame (attached to the parent link), and frame
   // M is the outboard frame (attached to the child link).
-  const Matrix3<Polynomial> R_FM =
-      Eigen::Matrix3d::Identity() +
-      sin_angle * A_F.cast<symbolic::Polynomial>() +
-      (1 - cos_angle) * A_F * A_F;
-  const Polynomial polynomial_zero{};
-  const Vector3<Polynomial> p_FM(polynomial_zero, polynomial_zero,
-                                 polynomial_zero);
+  const Matrix3<Expression> R_FM = Eigen::Matrix3d::Identity() +
+                                   sin_angle * A_F +
+                                   (1 - cos_angle) * A_F * A_F;
+  const Expression expr_zero{};
+  const Vector3<Expression> p_FM(expr_zero, expr_zero, expr_zero);
   CalcChildPose(R_WP, p_WP, *revolute_mobilizer, R_FM, p_FM, R_WC, p_WC);
 }
 
+template <typename T>
 void RationalForwardKinematics::CalcLinkPoseWithWeldJoint(
-    const WeldMobilizer<double>* weld_mobilizer,
-    const Matrix3<Polynomial>& R_WP, const Vector3<Polynomial>& p_WP,
-    Matrix3<Polynomial>* R_WC, Vector3<Polynomial>* p_WC) {
+    const WeldMobilizer<double>* weld_mobilizer, const Matrix3<T>& R_WP,
+    const Vector3<T>& p_WP, Matrix3<T>* R_WC, Vector3<T>* p_WC) {
   const Isometry3<double> X_FM = weld_mobilizer->get_X_FM();
   const Matrix3<double> R_FM = X_FM.linear();
   const Vector3<double> p_FM = X_FM.translation();
@@ -118,15 +116,15 @@ void RationalForwardKinematics::CalcLinkPoses() {
   // r(x) is computed as (p1(x) * r(x) + p2(x) * q1(x) * r(x)) / (q1(x) * r(x) *
   // r(x)), without handling the common factor r(x) in the denominator.
   VectorX<symbolic::Variable> cos_delta, sin_delta, t_angles;
-  std::vector<Matrix3<Polynomial>> R_WB_poly(tree_.num_bodies());
-  std::vector<Vector3<Polynomial>> p_WB_poly(tree_.num_bodies());
-  const Polynomial poly_zero{};
-  const Polynomial poly_one{1};
+  std::vector<Matrix3<Expression>> R_WB_expr(tree_.num_bodies());
+  std::vector<Vector3<Expression>> p_WB_expr(tree_.num_bodies());
+  const Expression expr_zero{};
+  const Expression expr_one{1};
   // clang-format off
-  R_WB_poly[0] << poly_one, poly_zero, poly_zero,
-                  poly_zero, poly_one, poly_zero,
-                  poly_zero, poly_zero, poly_one;
-  p_WB_poly[0] << poly_zero, poly_zero, poly_zero;
+  R_WB_expr[0] << expr_one, expr_zero, expr_zero,
+                  expr_zero, expr_one, expr_zero,
+                  expr_zero, expr_zero, expr_one;
+  p_WB_expr[0] << expr_zero, expr_zero, expr_zero;
   // clang-format on
   for (BodyIndex body_index(1); body_index < tree_.num_bodies(); ++body_index) {
     const BodyTopology& body_topology =
@@ -139,9 +137,9 @@ void RationalForwardKinematics::CalcLinkPoses() {
       const RevoluteMobilizer<double>* revolute_mobilizer =
           dynamic_cast<const RevoluteMobilizer<double>*>(mobilizer);
       CalcLinkPoseAsMultilinearPolynomialWithRevoluteJoint(
-          revolute_mobilizer, R_WB_poly[parent_index], p_WB_poly[parent_index],
-          &cos_delta, &sin_delta, &t_angles, &(R_WB_poly[body_index]),
-          &(p_WB_poly[body_index]));
+          revolute_mobilizer, R_WB_expr[parent_index], p_WB_expr[parent_index],
+          &cos_delta, &sin_delta, &t_angles, &(R_WB_expr[body_index]),
+          &(p_WB_expr[body_index]));
     } else if (dynamic_cast<const PrismaticMobilizer<double>*>(mobilizer) !=
                nullptr) {
       throw std::runtime_error("Prismatic joint has not been handled yet.");
@@ -150,8 +148,8 @@ void RationalForwardKinematics::CalcLinkPoses() {
       const WeldMobilizer<double>* weld_mobilizer =
           dynamic_cast<const WeldMobilizer<double>*>(mobilizer);
       CalcLinkPoseWithWeldJoint(
-          weld_mobilizer, R_WB_poly[parent_index], p_WB_poly[parent_index],
-          &(R_WB_poly[body_index]), &(p_WB_poly[body_index]));
+          weld_mobilizer, R_WB_expr[parent_index], p_WB_expr[parent_index],
+          &(R_WB_expr[body_index]), &(p_WB_expr[body_index]));
     } else if (dynamic_cast<const SpaceXYZMobilizer<double>*>(mobilizer) !=
                nullptr) {
       throw std::runtime_error("Gimbal joint has not been handled yet.");
@@ -162,23 +160,22 @@ void RationalForwardKinematics::CalcLinkPoses() {
       throw std::runtime_error(
           "RationalForwardKinematics: Can't handle this mobilizer.");
     }
-  }
 
-  // Now convert the multilinear polynomial of cos and sin to rational function
-  // of t.
-  symbolic::Variables t_variables(t_);
-  for (BodyIndex body_index{1}; body_index < tree_.num_bodies(); ++body_index) {
+    // Now convert the multilinear polynomial of cos and sin to rational function
+    // of t.
+    symbolic::Variables t_variables(t_);
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         ReplaceCosAndSinWithRationalFunction(
-            R_WB_poly[body_index](i, j).ToExpression(), cos_delta, sin_delta,
-            t_angles, t_variables, &(R_WB_[body_index](i, j)));
+            R_WB_expr[body_index](i, j), cos_delta, sin_delta, t_angles,
+            t_variables, &(R_WB_[body_index](i, j)));
       }
-      ReplaceCosAndSinWithRationalFunction(
-          p_WB_poly[body_index](i).ToExpression(), cos_delta, sin_delta,
-          t_angles, t_variables, &(p_WB_[body_index](i)));
+      ReplaceCosAndSinWithRationalFunction(p_WB_expr[body_index](i), cos_delta,
+                                           sin_delta, t_angles, t_variables,
+                                           &(p_WB_[body_index](i)));
     }
   }
+
 }
 
 void ReplaceCosAndSinWithRationalFunction(
@@ -210,32 +207,31 @@ void ReplaceCosAndSinWithRationalFunction(
     *e_rational = RationalFunction(Polynomial(e, t));
     return;
   }
-  Polynomial denominator(1);
+  Expression denominator(1);
   for (int angle_index : angle_indices) {
-    denominator *= Polynomial(1 + t_angle(angle_index) * t_angle(angle_index));
+    denominator *= 1 + t_angle(angle_index) * t_angle(angle_index);
   }
-  Polynomial numerator{};
+  Expression numerator{0};
   for (const auto& pair : e_poly.monomial_to_coefficient_map()) {
     // If the monomial contains cos_delta(i), then replace cos_delta(i) with
     // 1 - t_angle(i) * t_angle(i).
     // If the monomial contains sin_delta(i), then replace sin_delta(i) with
     // 2 * t_angle(i).
     // Otherwise, multiplies with 1 + t_angle(i) * t_angle(i)
-    symbolic::Polynomial numerator_monomial(pair.second, t);
+    Expression numerator_monomial(pair.second);
     for (int angle_index : angle_indices) {
       if (pair.first.degree(cos_delta(angle_index)) > 0) {
-        numerator_monomial *=
-            Polynomial(1 - t_angle(angle_index) * t_angle(angle_index));
+        numerator_monomial *= 1 - t_angle(angle_index) * t_angle(angle_index);
       } else if (pair.first.degree(sin_delta(angle_index)) > 0) {
-        numerator_monomial *= Polynomial(2 * t_angle(angle_index));
+        numerator_monomial *= 2 * t_angle(angle_index);
       } else {
-        numerator_monomial *=
-            Polynomial(1 + t_angle(angle_index) * t_angle(angle_index));
+        numerator_monomial *= 1 + t_angle(angle_index) * t_angle(angle_index);
       }
     }
     numerator += numerator_monomial;
   }
-  *e_rational = RationalFunction(numerator, denominator);
+  *e_rational =
+      RationalFunction(Polynomial(numerator, t), Polynomial(denominator, t));
 }
 }  // namespace multibody
 }  // namespace drake

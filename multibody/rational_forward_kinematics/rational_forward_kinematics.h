@@ -70,22 +70,20 @@ class RationalForwardKinematics {
   // namely the sum between rational functions p1(x) / (q1(x) * r(x)) + p2(x) /
   // r(x) is computed as (p1(x) * r(x) + p2(x) * q1(x) * r(x)) / (q1(x) * r(x) *
   // r(x)), without handling the common factor r(x) in the denominator.
+  template <typename T>
   void CalcLinkPoseAsMultilinearPolynomialWithRevoluteJoint(
       const RevoluteMobilizer<double>* revolute_mobilizer,
-      const Matrix3<symbolic::Polynomial>& R_WP,
-      const Vector3<symbolic::Polynomial>& p_WP,
+      const Matrix3<T>& R_WP, const Vector3<T>& p_WP,
       VectorX<symbolic::Variable>* cos_delta,
       VectorX<symbolic::Variable>* sin_delta,
-      VectorX<symbolic::Variable>* t_angle, Matrix3<symbolic::Polynomial>* R_WC,
-      Vector3<symbolic::Polynomial>* p_WC);
+      VectorX<symbolic::Variable>* t_angle, Matrix3<T>* R_WC, Vector3<T>* p_WC);
 
   // Compute the pose of the link, connected to its parent link through a
   // weld joint.
+  template <typename T>
   void CalcLinkPoseWithWeldJoint(const WeldMobilizer<double>* weld_mobilizer,
-                                 const Matrix3<symbolic::Polynomial>& R_WP,
-                                 const Vector3<symbolic::Polynomial>& p_WP,
-                                 Matrix3<symbolic::Polynomial>* R_WC,
-                                 Vector3<symbolic::Polynomial>* p_WC);
+                                 const Matrix3<T>& R_WP, const Vector3<T>& p_WP,
+                                 Matrix3<T>* R_WC, Vector3<T>* p_WC);
 
   const MultibodyTree<double>& tree_;
   // The variables used in computing the pose as rational functions. t_ are the
