@@ -287,6 +287,9 @@ class Expression {
   /** Returns string representation of Expression. */
   std::string to_string() const;
 
+  /** Generates code (TODO). */
+  std::string CodeGen(const std::vector<Variable>& parameters) const;
+
   /** Returns zero. */
   static Expression Zero();
   /** Returns one. */
@@ -979,6 +982,14 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   // structural equality between two expressions.
   return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
 }
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Expression& e);
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Eigen::Ref<const MatrixX<Expression>>& M);
 
 }  // namespace symbolic
 
