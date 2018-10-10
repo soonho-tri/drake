@@ -204,7 +204,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "tcc" not in excludes:
-        tcc_repository(name = "tcc")
+        tcc_repository(name = "tcc", mirrors = mirrors)
     if "tinydir" not in excludes:
         tinydir_repository(name = "tinydir", mirrors = mirrors)
     if "tinyobjloader" not in excludes:

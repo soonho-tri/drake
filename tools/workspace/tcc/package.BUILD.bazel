@@ -1,0 +1,65 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+licenses(["restricted"])  # LGPL-2.1
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "tcc",
+    hdrs = glob([
+        "*.h",
+        "*.def",
+        # "include/*.h",
+        "x86_64-*.c",
+    ]),
+    srcs = [
+      "libtcc.c",
+      "tccpp.c",
+      "tccgen.c",
+      "tccelf.c",
+      "tccasm.c",
+      "tccrun.c",
+      "x86_64-gen.c",
+      "x86_64-link.c",
+      "i386-asm.c",
+    ],
+    defines = [
+      "CONFIG_TCCDIR=\\\"/usr/local/lib/tcc\\\"",
+      "CONFIG_TRIPLET=\\\"x86_64-linux-gnu\\\"",
+      "ONE_SOURCE=0",
+      "TCC_TARGET_X86_64=1",
+      "TCC_VERSION=\\\"0.9.27\\\"",
+    ],
+    copts = ["-x c"],
+    linkopts = ["-ldl"],
+    includes = ["include"],
+)
+
+CMAKE_PACKAGE = "tcc"
+
+cmake_config(
+    package = CMAKE_PACKAGE,
+    script = "@drake//tools/workspace/tcc:package-create-cps.py",
+)
+
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
+
+install(
+    name = "install",
+    targets = [":tcc"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    hdr_strip_prefix = ["include"],
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE.rst"],
+    deps = [":install_cmake_config"],
+)
