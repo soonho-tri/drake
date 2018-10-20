@@ -1,5 +1,7 @@
 #include "drake/multibody/rational_forward_kinematics/rational_forward_kinematics.h"
 
+#include "drake/common/symbolic_expression_cell.h"
+
 namespace drake {
 namespace multibody {
 using symbolic::Polynomial;
@@ -167,7 +169,8 @@ void RationalForwardKinematics::CalcLinkPoses() {
           "RationalForwardKinematics: Can't handle this mobilizer.");
     }
 
-    // Now convert the multilinear polynomial of cos and sin to rational function
+    // Now convert the multilinear polynomial of cos and sin to rational
+    // function
     // of t.
     symbolic::Variables t_variables(t_);
     for (int i = 0; i < 3; ++i) {
@@ -181,7 +184,6 @@ void RationalForwardKinematics::CalcLinkPoses() {
                                            &(p_WB_[body_index](i)));
     }
   }
-
 }
 
 void ReplaceCosAndSinWithRationalFunction(
@@ -213,29 +215,37 @@ void ReplaceCosAndSinWithRationalFunction(
     *e_rational = RationalFunction(Polynomial(e, t));
     return;
   }
-  Expression denominator(1);
+  symbolic::ExpressionMulFactory denominator_factory{};
   for (int angle_index : angle_indices) {
-    denominator *= 1 + t_angle(angle_index) * t_angle(angle_index);
+    denominator_factory.AddExpression(
+        1 + t_angle(angle_index) * t_angle(angle_index));
   }
-  Expression numerator{0};
+  const Expression denominator{denominator_factory.GetExpression()};
+  symbolic::ExpressionAddFactory numerator_fac;
   for (const auto& pair : e_poly.monomial_to_coefficient_map()) {
     // If the monomial contains cos_delta(i), then replace cos_delta(i) with
     // 1 - t_angle(i) * t_angle(i).
     // If the monomial contains sin_delta(i), then replace sin_delta(i) with
     // 2 * t_angle(i).
     // Otherwise, multiplies with 1 + t_angle(i) * t_angle(i)
-    Expression numerator_monomial(pair.second);
+    symbolic::ExpressionMulFactory numerator_monomial_fac;
+    numerator_monomial_fac.AddExpression(pair.second);
     for (int angle_index : angle_indices) {
       if (pair.first.degree(cos_delta(angle_index)) > 0) {
-        numerator_monomial *= 1 - t_angle(angle_index) * t_angle(angle_index);
+        numerator_monomial_fac.AddExpression(
+            1 - t_angle(angle_index) * t_angle(angle_index));
       } else if (pair.first.degree(sin_delta(angle_index)) > 0) {
-        numerator_monomial *= 2 * t_angle(angle_index);
+        numerator_monomial_fac.AddExpression(2 * t_angle(angle_index));
       } else {
-        numerator_monomial *= 1 + t_angle(angle_index) * t_angle(angle_index);
+        numerator_monomial_fac.AddExpression(
+            1 + t_angle(angle_index) * t_angle(angle_index));
       }
     }
-    numerator += numerator_monomial;
+    const Expression numerator_monomial(numerator_monomial_fac.GetExpression());
+    numerator_fac.AddExpression(numerator_monomial);
   }
+  const Expression numerator{numerator_fac.GetExpression()};
+
   *e_rational =
       RationalFunction(Polynomial(numerator, t), Polynomial(denominator, t));
 }
