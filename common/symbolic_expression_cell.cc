@@ -522,12 +522,13 @@ double ExpressionAdd::Evaluate(const Environment& env) const {
 Expression ExpressionAdd::Expand() const {
   //   (c0 + c1 * e_1 + ... + c_n * e_n).Expand()
   // =  c0 + c1 * e_1.Expand() + ... + c_n * e_n.Expand()
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
-      Expression{constant_},
-      [](const Expression& init, const pair<Expression, double>& p) {
-        return init + ExpandMultiplication(p.first.Expand(), p.second);
-      });
+  ExpressionAddFactory fac{constant_, {}};
+  for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
+    const Expression& e_i{p.first};
+    const double c_i{p.second};
+    fac.AddExpression(ExpandMultiplication(e_i.Expand(), c_i));
+  }
+  return fac.GetExpression();
 }
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
