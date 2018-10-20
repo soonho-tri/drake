@@ -333,7 +333,7 @@ double ExpressionVar::Evaluate(const Environment& env) const {
   throw runtime_error(oss.str());
 }
 
-Expression ExpressionVar::Expand() const { return Expression{var_}; }
+Expression ExpressionVar::Expand() const { return GetExpression(); }
 
 Expression ExpressionVar::Substitute(const Substitution& s) const {
   const Substitution::const_iterator it{s.find(var_)};
@@ -383,7 +383,7 @@ double ExpressionConstant::Evaluate(const Environment&) const {
   return v_;
 }
 
-Expression ExpressionConstant::Expand() const { return Expression{v_}; }
+Expression ExpressionConstant::Expand() const { return GetExpression(); }
 
 Expression ExpressionConstant::Substitute(const Substitution&) const {
   DRAKE_DEMAND(!std::isnan(v_));
@@ -1143,7 +1143,11 @@ Expression ExpressionDiv::Expand() const {
     // defined above.
     return DivExpandVisitor{}.Simplify(e1, get_constant_value(e2));
   } else {
-    return e1 / e2;
+    if (get_first_argument().EqualTo(e1) && get_second_argument().EqualTo(e2)) {
+      return GetExpression();
+    } else {
+      return e1 / e2;
+    }
   }
 }
 
@@ -1191,7 +1195,13 @@ Polynomiald ExpressionLog::ToPolynomial() const {
 }
 
 Expression ExpressionLog::Expand() const {
-  return log(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  const Expression expanded_arg{arg.Expand()};
+  if (arg.EqualTo(expanded_arg)) {
+    return GetExpression();
+  } else {
+    return log(get_argument().Expand());
+  }
 }
 
 Expression ExpressionLog::Substitute(const Substitution& s) const {
@@ -1221,7 +1231,13 @@ Polynomiald ExpressionAbs::ToPolynomial() const {
 }
 
 Expression ExpressionAbs::Expand() const {
-  return abs(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  const Expression expanded_arg{arg.Expand()};
+  if (arg.EqualTo(expanded_arg)) {
+    return GetExpression();
+  } else {
+    return abs(get_argument().Expand());
+  }
 }
 
 Expression ExpressionAbs::Substitute(const Substitution& s) const {
@@ -1252,7 +1268,13 @@ Polynomiald ExpressionExp::ToPolynomial() const {
 }
 
 Expression ExpressionExp::Expand() const {
-  return exp(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  const Expression expanded_arg{arg.Expand()};
+  if (arg.EqualTo(expanded_arg)) {
+    return GetExpression();
+  } else {
+    return exp(get_argument().Expand());
+  }
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
@@ -1288,7 +1310,13 @@ Polynomiald ExpressionSqrt::ToPolynomial() const {
 }
 
 Expression ExpressionSqrt::Expand() const {
-  return sqrt(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  const Expression expanded_arg{arg.Expand()};
+  if (arg.EqualTo(expanded_arg)) {
+    return GetExpression();
+  } else {
+    return sqrt(get_argument().Expand());
+  }
 }
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
@@ -1364,7 +1392,13 @@ Polynomiald ExpressionSin::ToPolynomial() const {
 }
 
 Expression ExpressionSin::Expand() const {
-  return sin(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  const Expression expanded_arg{arg.Expand()};
+  if (arg.EqualTo(expanded_arg)) {
+    return GetExpression();
+  } else {
+    return sin(get_argument().Expand());
+  }
 }
 
 Expression ExpressionSin::Substitute(const Substitution& s) const {
