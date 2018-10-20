@@ -38,6 +38,9 @@ drake_cc_googletest(
         "//multibody/multibody_tree/multibody_plant",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
     ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
 )
 
 add_lint_tests()
