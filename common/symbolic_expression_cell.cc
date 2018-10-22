@@ -202,6 +202,10 @@ UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
                                          const bool is_poly)
     : ExpressionCell{k, is_poly}, e_{e} {}
 
+Expression ExpressionCell::GetExpression() const {
+  return Expression{shared_from_this()};
+}
+
 void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
   using drake::hash_append;

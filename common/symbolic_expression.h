@@ -473,6 +473,7 @@ class Expression {
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
+  friend class ExpressionCell;
 
  private:
   explicit Expression(std::shared_ptr<const ExpressionCell> ptr);
