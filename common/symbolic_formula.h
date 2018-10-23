@@ -246,6 +246,8 @@ class Formula {
   friend std::shared_ptr<const FormulaPositiveSemidefinite>
   to_positive_semidefinite(const Formula& f);
 
+  friend class FormulaCell;
+
  private:
   void HashAppend(DelegatingHasher* hasher) const;
 

@@ -43,8 +43,11 @@ bool is_non_negative_integer(double v);
  * @note It provides virtual function, ExpressionCell::Display, because
  * operator<< is not allowed to be a virtual function.
  */
-class ExpressionCell {
+class ExpressionCell : public std::enable_shared_from_this<ExpressionCell> {
  public:
+  /** Returns an Expression which points to this cell. */
+  Expression GetExpression() const;
+
   /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
 

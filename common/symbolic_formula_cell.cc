@@ -29,6 +29,8 @@ using std::string;
 
 FormulaCell::FormulaCell(const FormulaKind k) : kind_{k} {}
 
+Formula FormulaCell::GetFormula() const { return Formula{shared_from_this()}; }
+
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              const Expression& lhs,
                                              const Expression& rhs)

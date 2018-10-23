@@ -197,6 +197,10 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
 ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly)
     : kind_{k}, is_polynomial_{is_poly} {}
 
+Expression ExpressionCell::GetExpression() const {
+  return Expression{shared_from_this()};
+}
+
 UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
                                          const Expression& e,
                                          const bool is_poly)
