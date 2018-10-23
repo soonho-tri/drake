@@ -1171,15 +1171,6 @@ double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
 ExpressionLog::ExpressionLog(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Log, e, false} {}
 
-void ExpressionLog::check_domain(const double v) {
-  if (!(v >= 0)) {
-    ostringstream oss;
-    oss << "log(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [0, +oo)" << endl;
-    throw domain_error(oss.str());
-  }
-}
-
 Polynomiald ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
 }
@@ -1202,10 +1193,7 @@ ostream& ExpressionLog::Display(ostream& os) const {
   return os << "log(" << get_argument() << ")";
 }
 
-double ExpressionLog::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::log(v);
-}
+double ExpressionLog::DoEvaluate(const double v) const { return std::log(v); }
 
 ExpressionAbs::ExpressionAbs(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Abs, e, false} {}
@@ -1268,15 +1256,6 @@ double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e, false} {}
 
-void ExpressionSqrt::check_domain(const double v) {
-  if (!(v >= 0)) {
-    ostringstream oss;
-    oss << "sqrt(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [0, +oo)" << endl;
-    throw domain_error(oss.str());
-  }
-}
-
 Polynomiald ExpressionSqrt::ToPolynomial() const {
   throw runtime_error("Sqrt expression is not polynomial-convertible.");
 }
@@ -1299,10 +1278,7 @@ ostream& ExpressionSqrt::Display(ostream& os) const {
   return os << "sqrt(" << get_argument() << ")";
 }
 
-double ExpressionSqrt::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::sqrt(v);
-}
+double ExpressionSqrt::DoEvaluate(const double v) const { return std::sqrt(v); }
 
 ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2,
@@ -1434,15 +1410,6 @@ double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
 ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e, false} {}
 
-void ExpressionAsin::check_domain(const double v) {
-  if (!((v >= -1.0) && (v <= 1.0))) {
-    ostringstream oss;
-    oss << "asin(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [-1.0, +1.0]" << endl;
-    throw domain_error(oss.str());
-  }
-}
-
 Polynomiald ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
 }
@@ -1465,22 +1432,10 @@ ostream& ExpressionAsin::Display(ostream& os) const {
   return os << "asin(" << get_argument() << ")";
 }
 
-double ExpressionAsin::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::asin(v);
-}
+double ExpressionAsin::DoEvaluate(const double v) const { return std::asin(v); }
 
 ExpressionAcos::ExpressionAcos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Acos, e, false} {}
-
-void ExpressionAcos::check_domain(const double v) {
-  if (!((v >= -1.0) && (v <= 1.0))) {
-    ostringstream oss;
-    oss << "acos(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [-1.0, +1.0]" << endl;
-    throw domain_error(oss.str());
-  }
-}
 
 Polynomiald ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
@@ -1504,10 +1459,7 @@ ostream& ExpressionAcos::Display(ostream& os) const {
   return os << "acos(" << get_argument() << ")";
 }
 
-double ExpressionAcos::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::acos(v);
-}
+double ExpressionAcos::DoEvaluate(const double v) const { return std::acos(v); }
 
 ExpressionAtan::ExpressionAtan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Atan, e, false} {}

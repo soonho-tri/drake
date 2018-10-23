@@ -480,8 +480,6 @@ class ExpressionLog : public UnaryExpressionCell {
   friend Expression log(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -529,8 +527,6 @@ class ExpressionSqrt : public UnaryExpressionCell {
   friend Expression sqrt(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -608,8 +604,6 @@ class ExpressionAsin : public UnaryExpressionCell {
   friend Expression asin(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -626,8 +620,6 @@ class ExpressionAcos : public UnaryExpressionCell {
   friend Expression acos(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 

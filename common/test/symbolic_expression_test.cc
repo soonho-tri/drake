@@ -100,13 +100,14 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression x_plus_y_{x_ + y_};
   const Expression x_plus_z_{x_ + z_};
 
-  const Expression zero_{0.0};
-  const Expression one_{1.0};
+  const Expression zero_{Expression::Zero()};
+  const Expression one_{Expression::One()};
   const Expression two_{2.0};
-  const Expression neg_one_{-1.0};
+  const Expression neg_one_{-one_};
   const Expression pi_{M_PI};
-  const Expression neg_pi_{-M_PI};
+  const Expression neg_pi_{-pi_};
   const Expression e_{M_E};
+  const Expression infty_{INFINITY};
 
   const Expression c1_{-10.0};
   const Expression c2_{1.0};
@@ -1198,9 +1199,9 @@ TEST_F(SymbolicExpressionTest, AddMul1) {
 }
 
 TEST_F(SymbolicExpressionTest, Div1) {
-  EXPECT_THROW(c3_ / zero_, runtime_error);
+  EXPECT_PRED2(ExprEqual, c3_ / zero_, Expression{INFINITY});
   EXPECT_EQ((zero_ / c3_).to_string(), zero_.to_string());
-  EXPECT_THROW(c3_ / 0.0, runtime_error);
+  EXPECT_PRED2(ExprEqual, c3_ / 0.0, Expression{INFINITY});
   EXPECT_EQ((0.0 / c3_).to_string(), zero_.to_string());
 
   EXPECT_EQ((c3_ / one_).to_string(), c3_.to_string());
@@ -1288,8 +1289,8 @@ TEST_F(SymbolicExpressionTest, Log) {
   EXPECT_DOUBLE_EQ(log(pi_).Evaluate(), std::log(M_PI));
   EXPECT_DOUBLE_EQ(log(one_).Evaluate(), std::log(1.0));
   EXPECT_DOUBLE_EQ(log(zero_).Evaluate(), std::log(0.0));
-  EXPECT_THROW(log(neg_one_).Evaluate(), domain_error);
-  EXPECT_THROW(log(neg_pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, log(neg_one_), Expression::NaN());
+  EXPECT_PRED2(ExprEqual, log(neg_pi_), Expression::NaN());
   const Expression e{log(x_ * y_ * pi_) + log(x_) + log(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
@@ -1333,8 +1334,8 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
   EXPECT_DOUBLE_EQ(sqrt(pi_).Evaluate(), std::sqrt(M_PI));
   EXPECT_DOUBLE_EQ(sqrt(one_).Evaluate(), std::sqrt(1.0));
   EXPECT_DOUBLE_EQ(sqrt(zero_).Evaluate(), std::sqrt(0.0));
-  EXPECT_THROW(sqrt(neg_one_).Evaluate(), domain_error);
-  EXPECT_THROW(sqrt(neg_pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, sqrt(neg_one_), Expression::NaN());
+  EXPECT_PRED2(ExprEqual, sqrt(neg_pi_), Expression::NaN());
 
   const Expression e{sqrt(x_ * y_ * pi_) + sqrt(x_) + sqrt(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
@@ -1451,12 +1452,12 @@ TEST_F(SymbolicExpressionTest, Tan) {
 }
 
 TEST_F(SymbolicExpressionTest, Asin) {
-  EXPECT_THROW(asin(pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, asin(pi_), Expression::NaN());
   EXPECT_DOUBLE_EQ(asin(one_).Evaluate(), std::asin(1));
-  EXPECT_THROW(asin(two_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, asin(two_), Expression::NaN());
   EXPECT_DOUBLE_EQ(asin(zero_).Evaluate(), std::asin(0));
   EXPECT_DOUBLE_EQ(asin(neg_one_).Evaluate(), std::asin(-1));
-  EXPECT_THROW(asin(neg_pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, asin(neg_pi_), Expression::NaN());
 
   const Expression e{asin(x_ * y_ * pi_) + asin(x_) + asin(y_)};
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
@@ -1466,12 +1467,12 @@ TEST_F(SymbolicExpressionTest, Asin) {
 }
 
 TEST_F(SymbolicExpressionTest, Acos) {
-  EXPECT_THROW(acos(pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, acos(pi_), Expression::NaN());
   EXPECT_DOUBLE_EQ(acos(one_).Evaluate(), std::acos(1));
-  EXPECT_THROW(acos(two_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, acos(two_), Expression::NaN());
   EXPECT_DOUBLE_EQ(acos(zero_).Evaluate(), std::acos(0));
   EXPECT_DOUBLE_EQ(acos(neg_one_).Evaluate(), std::acos(-1));
-  EXPECT_THROW(acos(neg_pi_).Evaluate(), domain_error);
+  EXPECT_PRED2(ExprEqual, acos(neg_pi_), Expression::NaN());
 
   const Expression e{acos(x_ * y_ * pi_) + acos(x_) + acos(y_)};
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
@@ -2099,6 +2100,44 @@ TEST_F(SymbolicExpressionTest, TaylorExpandPartialEnv2) {
   for (const auto& test_env : test_envs) {
     EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
   }
+}
+
+TEST_F(SymbolicExpressionTest, IEEE754_NaN) {
+  // 0 / 0 = NaN.
+  EXPECT_PRED2(ExprEqual, zero_ / zero_, Expression::NaN());
+
+  // 0 * ∞ = NaN, 0 * -∞ = NaN.
+  EXPECT_PRED2(ExprEqual, zero_ * infty_, Expression::NaN());
+  EXPECT_PRED2(ExprEqual, zero_ * -infty_, Expression::NaN());
+
+  // (+∞) + (-∞) = NaN, (-∞) + (+∞) = NaN.
+  EXPECT_PRED2(ExprEqual, (+infty_) + (-infty_), Expression::NaN());
+  EXPECT_PRED2(ExprEqual, (-infty_) + (+infty_), Expression::NaN());
+
+  // (+∞) - (+∞) = NaN, (-∞) - (-∞) = NaN.
+  EXPECT_PRED2(ExprEqual, (+infty_) - (+infty_), Expression::NaN());
+  EXPECT_PRED2(ExprEqual, (-infty_) - (-infty_), Expression::NaN());
+
+  // sqrt(-1) = NaN
+  EXPECT_PRED2(ExprEqual, sqrt(-one_), Expression::NaN());
+
+  // log(-1) = NaN
+  EXPECT_PRED2(ExprEqual, log(-one_), Expression::NaN());
+
+  // asin(2) = NaN
+  EXPECT_PRED2(ExprEqual, asin(two_), Expression::NaN());
+
+  // acos(2) = NaN
+  EXPECT_PRED2(ExprEqual, acos(two_), Expression::NaN());
+}
+
+TEST_F(SymbolicExpressionTest, IEEE754_Pow) {
+  // pow(0, 0) = 1.
+  EXPECT_PRED2(ExprEqual, pow(zero_, zero_), one_);
+  // pow(1, ∞) = 1.
+  EXPECT_PRED2(ExprEqual, pow(one_, infty_), one_);
+  // pow(∞, 0) = 1.
+  EXPECT_PRED2(ExprEqual, pow(infty_, zero_), one_);
 }
 
 }  // namespace

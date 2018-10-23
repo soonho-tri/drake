@@ -281,6 +281,11 @@ Expression operator-(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
+  // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+  if (is_constant(lhs) && is_constant(rhs)) {
+    lhs = get_constant_value(lhs) - get_constant_value(rhs);
+    return lhs;
+  }
   // Simplification: E - E => 0
   // TODO(soonho-tri): This simplification is not sound since it cancels `E`
   // which might cause 0/0 during evaluation.
@@ -290,11 +295,6 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   }
   // Simplification: x - 0 => x
   if (is_zero(rhs)) {
-    return lhs;
-  }
-  // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
-  if (is_constant(lhs) && is_constant(rhs)) {
-    lhs = get_constant_value(lhs) - get_constant_value(rhs);
     return lhs;
   }
   // x - y => x + (-y)
@@ -345,6 +345,11 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   }
   // Simplification: x * 1 => x
   if (is_one(rhs)) {
+    return lhs;
+  }
+  if (is_constant(lhs) && is_constant(rhs)) {
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
     return lhs;
   }
   // Simplification: (E1 / E2) * (E3 / E4) => (E1 * E3) / (E2 * E4)
@@ -442,11 +447,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       }
     }
   }
-  if (is_constant(lhs) && is_constant(rhs)) {
-    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
-    lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
-    return lhs;
-  }
   // Simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (is_multiplication(lhs)) {
@@ -493,11 +493,6 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
   if (is_constant(lhs) && is_constant(rhs)) {
     const double v1{get_constant_value(lhs)};
     const double v2{get_constant_value(rhs)};
-    if (v2 == 0.0) {
-      ostringstream oss{};
-      oss << "Division by zero: " << v1 << "/" << v2;
-      throw runtime_error(oss.str());
-    }
     lhs = Expression{v1 / v2};
     return lhs;
   }
@@ -541,7 +536,6 @@ Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionLog::check_domain(v);
     return Expression{std::log(v)};
   }
   return Expression{make_shared<const ExpressionLog>(e)};
@@ -567,7 +561,6 @@ Expression sqrt(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionSqrt::check_domain(v);
     return Expression{std::sqrt(v)};
   }
   // Simplification: sqrt(pow(x, 2)) => abs(x)
@@ -638,7 +631,6 @@ Expression asin(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionAsin::check_domain(v);
     return Expression{std::asin(v)};
   }
   return Expression{make_shared<const ExpressionAsin>(e)};
@@ -648,7 +640,6 @@ Expression acos(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionAcos::check_domain(v);
     return Expression{std::acos(v)};
   }
   return Expression{make_shared<const ExpressionAcos>(e)};
