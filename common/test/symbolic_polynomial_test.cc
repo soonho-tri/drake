@@ -766,14 +766,23 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate3) {
 }
 
 TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
+  std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
   // p = (a + c / b + c)*x² + b*x + c
   //
   // Partially evaluating p with [a ↦ 0, b ↦ 0, c ↦ 0] throws `runtime_error`
   // because of the divide-by-zero
-  const Polynomial p{((a_ + c_) / (b_ + c_)) * x_ * x_ + b_ * x_ + c_,
-                     var_xyz_};
+  // const Polynomial p{((a_ + c_) / (b_ + c_)) * x_ * x_ + b_ * x_ + c_,
+  //                    var_xyz_};
+
+  // const Polynomial p{(a_ / b_) * x_ * x_ + a_ * x_, var_xyz_};
+  // const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
+  // const Polynomial expected{(0.0 / 0.0) * x_ * x_ + 0.0 * x_, var_xyz_};
+  // EXPECT_PRED2(PolyEqual, p.EvaluatePartial(env), expected);
+
+  const Polynomial p{a_ * x_, var_xyz_};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
-  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+  const Polynomial expected{0.0, var_xyz_};
+  EXPECT_PRED2(PolyEqual, p.EvaluatePartial(env), expected);
 }
 
 TEST_F(SymbolicPolynomialTest, Hash) {

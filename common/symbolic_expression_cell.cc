@@ -316,7 +316,6 @@ Polynomiald ExpressionVar::ToPolynomial() const {
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
-    DRAKE_ASSERT(!std::isnan(it->second));
     return it->second;
   }
   ostringstream oss;
@@ -347,9 +346,7 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
-    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {
-  DRAKE_ASSERT(!std::isnan(v));
-}
+    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {}
 
 void ExpressionConstant::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;
@@ -361,7 +358,12 @@ Variables ExpressionConstant::GetVariables() const { return Variables{}; }
 bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  return v_ == static_cast<const ExpressionConstant&>(e).v_;
+  const double v_in_e{static_cast<const ExpressionConstant&>(e).v_};
+  if (std::isnan(v_)) {
+    return std::isnan(v_in_e);
+  } else {
+    return v_ == v_in_e;
+  }
 }
 
 bool ExpressionConstant::Less(const ExpressionCell& e) const {
@@ -372,15 +374,11 @@ bool ExpressionConstant::Less(const ExpressionCell& e) const {
 
 Polynomiald ExpressionConstant::ToPolynomial() const { return Polynomiald(v_); }
 
-double ExpressionConstant::Evaluate(const Environment&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
-  return v_;
-}
+double ExpressionConstant::Evaluate(const Environment&) const { return v_; }
 
 Expression ExpressionConstant::Expand() const { return Expression{v_}; }
 
 Expression ExpressionConstant::Substitute(const Substitution&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
 }
 
@@ -389,46 +387,6 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
 }
 
 ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
-
-ExpressionNaN::ExpressionNaN() : ExpressionCell{ExpressionKind::NaN, false} {}
-
-void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
-
-Variables ExpressionNaN::GetVariables() const { return Variables{}; }
-
-bool ExpressionNaN::EqualTo(const ExpressionCell& e) const {
-  // Expression::EqualTo guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return true;
-}
-
-bool ExpressionNaN::Less(const ExpressionCell& e) const {
-  // Expression::Less guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return false;
-}
-
-Polynomiald ExpressionNaN::ToPolynomial() const {
-  throw runtime_error("NaN is detected while converting to Polynomial.");
-}
-
-double ExpressionNaN::Evaluate(const Environment&) const {
-  throw runtime_error("NaN is detected during Symbolic computation.");
-}
-
-Expression ExpressionNaN::Expand() const {
-  throw runtime_error("NaN is detected during expansion.");
-}
-
-Expression ExpressionNaN::Substitute(const Substitution&) const {
-  throw runtime_error("NaN is detected during substitution.");
-}
-
-Expression ExpressionNaN::Differentiate(const Variable&) const {
-  throw runtime_error("NaN is detected during differentiation.");
-}
-
-ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
 ExpressionAdd::ExpressionAdd(const double constant,
                              const map<Expression, double>& expr_to_coeff_map)
@@ -1159,12 +1117,6 @@ ostream& ExpressionDiv::Display(ostream& os) const {
 }
 
 double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
-  if (v2 == 0.0) {
-    ostringstream oss;
-    oss << "Division by zero: " << v1 << " / " << v2;
-    this->Display(oss) << endl;
-    throw runtime_error(oss.str());
-  }
   return v1 / v2;
 }
 

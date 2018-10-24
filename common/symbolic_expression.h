@@ -62,7 +62,6 @@ enum class ExpressionKind {
   Ceil,                   ///< ceil
   Floor,                  ///< floor
   IfThenElse,             ///< if then else
-  NaN,                    ///< NaN
   UninterpretedFunction,  ///< Uninterpreted function
   // TODO(soonho): add Integral
 };
@@ -115,7 +114,7 @@ Its syntax tree is as follows:
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
        | min(E, E) | max(E, E) | ceil(E) | floor(E) | if_then_else(F, E, E)
-       | NaN | uninterpreted_function(name, {v_1, ..., v_n})
+       | uninterpreted_function(name, {v_1, ..., v_n})
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -234,7 +233,6 @@ class Expression {
   Polynomiald ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
-   *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
 
@@ -242,7 +240,6 @@ class Expression {
    * env. Internally, this method promotes @p env into a substitution
    * (Variable → Expression) and call Evaluate::Substitute with it.
    *
-   * @throws std::runtime_error if NaN is detected during evaluation.
    */
   Expression EvaluatePartial(const Environment& env) const;
 
@@ -253,13 +250,11 @@ class Expression {
    * 2y)`. It also simplifies "division by constant" cases. See
    * "drake/common/test/symbolic_expansion_test.cc" to find the examples.
    *
-   * @throws std::runtime_error if NaN is detected during expansion.
    */
   Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
-   * @throws std::runtime_error if NaN is detected during substitution.
    */
   Expression Substitute(const Variable& var, const Expression& e) const;
 
@@ -267,7 +262,6 @@ class Expression {
    * variables in @p s with corresponding expressions in @p s. Note that the
    * substitutions occur simultaneously. For example, (x / y).Substitute({{x,
    * y}, {y, x}}) gets (y / x).
-   * @throws std::runtime_error if NaN is detected during substitution.
    */
   Expression Substitute(const Substitution& s) const;
 
@@ -768,7 +762,6 @@ auto operator*(
 
 /// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
 /// @returns a matrix of double whose size is the size of `m`.
-/// @throws std::runtime_error if NaN is detected during evaluation.
 template <typename Derived>
 auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
   static_assert(std::is_same<typename Derived::Scalar, Expression>::value,

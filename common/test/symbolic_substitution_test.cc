@@ -70,6 +70,9 @@ void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
   }
   // Otherwise, we check if we have apply_subst = subst_apply.
   const Expression subst_apply{f(args2)};
+  if (!ExprEqual(apply_subst, subst_apply)) {
+    std::cerr << "something is wrong:\n";
+  }
   EXPECT_PRED2(ExprEqual, apply_subst, subst_apply);
 }
 

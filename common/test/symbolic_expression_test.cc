@@ -156,10 +156,11 @@ TEST_F(SymbolicExpressionTest, Dummy) {
 
 TEST_F(SymbolicExpressionTest, IsConstant1) {
   EXPECT_TRUE(is_constant(e_constant_));
+  EXPECT_TRUE(is_constant(e_nan_));
   const vector<Expression>::difference_type cnt{
       count_if(collection_.begin(), collection_.end(),
                [](const Expression& e) { return is_constant(e); })};
-  EXPECT_EQ(cnt, 1);
+  EXPECT_EQ(cnt, 2);
 }
 
 TEST_F(SymbolicExpressionTest, IsConstant2) {
@@ -188,9 +189,8 @@ TEST_F(SymbolicExpressionTest, NaN) {
   // It's OK to have an expression including NaN inside.
   const Expression e1{1.0 + nan};
   // It's OK to display an expression including NaN inside.
-  EXPECT_EQ(e1.to_string(), "(1 + NaN)");
-  // It throws when we evaluate an expression including NaN.
-  EXPECT_THROW(e1.Evaluate(), runtime_error);
+  EXPECT_EQ(e1.to_string(), "nan");
+  EXPECT_TRUE(is_nan(e1.Evaluate()));
 }
 
 TEST_F(SymbolicExpressionTest, IsVariable) {
@@ -496,7 +496,7 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
       {e_acos_, false},    {e_atan_, false}, {e_atan2_, false},
       {e_sinh_, false},    {e_cosh_, false}, {e_tanh_, false},
       {e_min_, false},     {e_max_, false},  {e_ceil_, false},
-      {e_floor_, false},   {e_ite_, false},  {e_nan_, false},
+      {e_floor_, false},   {e_ite_, false},  {e_nan_, true},
       {e_uf_, false}};
   for (const pair<Expression, bool>& p : test_vec) {
     EXPECT_EQ(p.first.is_polynomial(), p.second);
@@ -580,11 +580,9 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
 
 TEST_F(SymbolicExpressionTest, ToPolynomial2) {
   const vector<Expression> test_vec{
-      e_log_,   e_abs_,  e_exp_,   e_sqrt_, e_sin_,
-      e_cos_,   e_tan_,  e_asin_,  e_acos_, e_atan_,
-      e_atan2_, e_sinh_, e_cosh_,  e_tanh_, e_min_,
-      e_max_,   e_ceil_, e_floor_, e_ite_,  Expression::NaN(),
-      e_uf_};
+      e_log_,  e_abs_,  e_exp_,  e_sqrt_,  e_sin_,  e_cos_,  e_tan_,
+      e_asin_, e_acos_, e_atan_, e_atan2_, e_sinh_, e_cosh_, e_tanh_,
+      e_min_,  e_max_,  e_ceil_, e_floor_, e_ite_,  e_uf_};
   for (const Expression& e : test_vec) {
     EXPECT_FALSE(e.is_polynomial());
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
@@ -596,7 +594,7 @@ TEST_F(SymbolicExpressionTest, LessKind) {
                  e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
                  e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
                  e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ceil_,
-                 e_floor_,    e_ite_,  e_nan_,  e_uf_});
+                 e_floor_,    e_ite_,  e_uf_});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -840,7 +838,7 @@ TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c2_.Evaluate(), 1);
   EXPECT_EQ(c3_.Evaluate(), 3.14159);
   EXPECT_EQ(c4_.Evaluate(), -2.718);
-  EXPECT_THROW(Expression{NAN}.Evaluate(), runtime_error);
+  EXPECT_TRUE(is_nan(Expression{NAN}.Evaluate()));
 }
 
 TEST_F(SymbolicExpressionTest, StaticConstant) {
@@ -1238,7 +1236,7 @@ TEST_F(SymbolicExpressionTest, Div4) {
   const Environment env1{{var_x_, 1.0}, {var_y_, 5.0}};
   const Environment env2{{var_x_, 1.0}, {var_y_, 0.0}};
   EXPECT_EQ(e.Evaluate(env1), 1.0 / 5.0);
-  EXPECT_THROW(e.Evaluate(env2), std::runtime_error);
+  EXPECT_EQ(e.Evaluate(env2), 1.0 / 0.0);
 }
 
 // This test checks whether symbolic::Expression is compatible with

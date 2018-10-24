@@ -42,19 +42,6 @@ bool operator<(ExpressionKind k1, ExpressionKind k2) {
 }
 
 namespace {
-// This function is used in Expression(const double d) constructor. It turns out
-// a ternary expression "std::isnan(d) ? make_shared<const ExpressionNaN>() :
-// make_shared<const ExpressionConstant>()" does not work due to C++'s
-// type-system. It throws "Incompatible operand types when using ternary
-// conditional operator" error. Related S&O entry:
-// http://stackoverflow.com/questions/29842095/incompatible-operand-types-when-using-ternary-conditional-operator.
-shared_ptr<const ExpressionCell> make_cell(const double d) {
-  if (std::isnan(d)) {
-    return make_shared<const ExpressionNaN>();
-  }
-  return make_shared<const ExpressionConstant>(d);
-}
-
 // Negates an addition expression.
 // - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
 Expression NegateAddition(const Expression& e) {
@@ -72,7 +59,8 @@ Expression NegateMultiplication(const Expression& e) {
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<const ExpressionVar>(var)} {}
-Expression::Expression(const double d) : ptr_{make_cell(d)} {}
+Expression::Expression(const double d)
+    : ptr_{make_shared<const ExpressionConstant>(d)} {}
 Expression::Expression(std::shared_ptr<const ExpressionCell> ptr)
     : ptr_{std::move(ptr)} {}
 
@@ -108,8 +96,7 @@ Expression Expression::E() {
 }
 
 Expression Expression::NaN() {
-  static const never_destroyed<Expression> nan{
-      Expression{make_shared<const ExpressionNaN>()}};
+  static const never_destroyed<Expression> nan{NAN};
   return nan.access();
 }
 
@@ -753,7 +740,9 @@ bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
 bool is_one(const Expression& e) { return is_constant(e, 1.0); }
 bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
-bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
+bool is_nan(const Expression& e) {
+  return is_constant(e) && std::isnan(get_constant_value(e));
+}
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {

@@ -280,7 +280,7 @@ TEST_F(SymbolicFormulaTest, IsNaN) {
   // disallowing NaNs to be evaluated at runtime.
   const Expression nan{NAN};
   const Formula nan_is_nan{isnan(nan)};
-  EXPECT_THROW(nan_is_nan.Evaluate(), runtime_error);
+  EXPECT_TRUE(nan_is_nan.Evaluate());
 
   // Buried NaNs are safe.
   const Formula ite_nan1{isnan(if_then_else(tt_, zero, nan))};
@@ -288,13 +288,13 @@ TEST_F(SymbolicFormulaTest, IsNaN) {
 
   // This case will be evaluated to NaN and we will have runtime_error.
   const Formula ite_nan2{isnan(if_then_else(ff_, zero, nan))};
-  EXPECT_THROW(ite_nan2.Evaluate(), runtime_error);
+  EXPECT_TRUE(ite_nan2.Evaluate());
 
   // Formula isnan(x / y) should throw a runtime_error when evaluated with
   // an environment mapping both of x and y to zero, because 0.0 / 0.0 = NaN.
   const Expression x_div_y{x_ / y_};
   const Environment env1{{var_x_, 0.0}, {var_y_, 0.0}};
-  EXPECT_THROW(isnan(x_div_y).Evaluate(env1), runtime_error);
+  EXPECT_TRUE(isnan(x_div_y).Evaluate(env1));
 
   // If the included expression `e` is not evaluated to NaN, `isnan(e)` should
   // return false.
@@ -901,7 +901,7 @@ TEST_F(SymbolicFormulaTest, ToString) {
   EXPECT_EQ(f_or_.to_string(), "(((x + y) > 0) or ((x * y) < 5))");
   EXPECT_EQ(f_forall_.to_string(),
             "forall({x, y}. (((x + y) > 0) or ((x * y) < 5)))");
-  EXPECT_EQ(f_isnan_.to_string(), "isnan(NaN)");
+  EXPECT_EQ(f_isnan_.to_string(), "isnan(nan)");
 }
 
 TEST_F(SymbolicFormulaTest, IsTrue) {
@@ -1202,9 +1202,7 @@ TEST_F(SymbolicFormulaTest, Isinf) {
   // throw.
   EXPECT_NO_THROW(isinf(Expression::NaN()));
 
-  // For NaN, symbolic::isinf will throw an exception when evaluated while
-  // std::isfinite returns false.
-  EXPECT_THROW(isinf(Expression::NaN()).Evaluate(), std::runtime_error);
+  EXPECT_EQ(isinf(Expression::NaN()).Evaluate(), false);
 }
 
 TEST_F(SymbolicFormulaTest, Isfinite) {
@@ -1222,9 +1220,7 @@ TEST_F(SymbolicFormulaTest, Isfinite) {
   // throw.
   EXPECT_NO_THROW(isfinite(Expression::NaN()));
 
-  // For NaN, symbolic::isfinite will throw an exception when evaluated while
-  // std::isfinite returns false.
-  EXPECT_THROW(isfinite(Expression::NaN()).Evaluate(), std::runtime_error);
+  EXPECT_EQ(isfinite(Expression::NaN()).Evaluate(), false);
 }
 
 // Confirm that formulas compile (and pass) Drake's assert-like checks.

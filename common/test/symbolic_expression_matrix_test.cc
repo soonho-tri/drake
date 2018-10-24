@@ -463,8 +463,12 @@ TEST_F(SymbolicExpressionMatrixTest, Evaluate) {
   C << x_, Expression::NaN(),
        y_, z_;
   // clang-format on
-  DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env), std::runtime_error,
-                              "NaN is detected during Symbolic computation.");
+
+  MatrixX<double> evaluated{Evaluate(C, env)};
+  EXPECT_EQ(C(0, 0).Evaluate(env), evaluated(0, 0));
+  EXPECT_TRUE(is_nan(evaluated(0, 1)));
+  EXPECT_EQ(C(1, 0).Evaluate(env), evaluated(1, 0));
+  EXPECT_EQ(C(1, 1).Evaluate(env), evaluated(1, 1));
 }
 }  // namespace
 }  // namespace symbolic
