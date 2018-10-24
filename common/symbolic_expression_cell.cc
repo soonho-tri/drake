@@ -60,6 +60,18 @@ bool is_non_negative_integer(const double v) {
 
 namespace {
 
+// Returns true if v1 and v2 are the same.
+//
+// Note that we handle the special case where both of v1 and v2 are NaNs because
+// `NaN == NaN` is evaluated to false, which is *not* what we want.
+bool is_equal(const double v1, const double v2) {
+  if (std::isnan(v1)) {
+    return std::isnan(v2);
+  } else {
+    return v1 == v2;
+  }
+}
+
 // Determines if the summation represented by term_to_coeff_map is
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionAdd.
@@ -316,7 +328,6 @@ Polynomiald ExpressionVar::ToPolynomial() const {
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
-    DRAKE_ASSERT(!std::isnan(it->second));
     return it->second;
   }
   ostringstream oss;
@@ -347,9 +358,7 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
-    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {
-  DRAKE_ASSERT(!std::isnan(v));
-}
+    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {}
 
 void ExpressionConstant::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;
@@ -361,7 +370,7 @@ Variables ExpressionConstant::GetVariables() const { return Variables{}; }
 bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  return v_ == static_cast<const ExpressionConstant&>(e).v_;
+  return is_equal(v_, static_cast<const ExpressionConstant&>(e).v_);
 }
 
 bool ExpressionConstant::Less(const ExpressionCell& e) const {
@@ -372,15 +381,11 @@ bool ExpressionConstant::Less(const ExpressionCell& e) const {
 
 Polynomiald ExpressionConstant::ToPolynomial() const { return Polynomiald(v_); }
 
-double ExpressionConstant::Evaluate(const Environment&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
-  return v_;
-}
+double ExpressionConstant::Evaluate(const Environment&) const { return v_; }
 
 Expression ExpressionConstant::Expand() const { return Expression{v_}; }
 
 Expression ExpressionConstant::Substitute(const Substitution&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
 }
 
@@ -389,46 +394,6 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
 }
 
 ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
-
-ExpressionNaN::ExpressionNaN() : ExpressionCell{ExpressionKind::NaN, false} {}
-
-void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
-
-Variables ExpressionNaN::GetVariables() const { return Variables{}; }
-
-bool ExpressionNaN::EqualTo(const ExpressionCell& e) const {
-  // Expression::EqualTo guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return true;
-}
-
-bool ExpressionNaN::Less(const ExpressionCell& e) const {
-  // Expression::Less guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return false;
-}
-
-Polynomiald ExpressionNaN::ToPolynomial() const {
-  throw runtime_error("NaN is detected while converting to Polynomial.");
-}
-
-double ExpressionNaN::Evaluate(const Environment&) const {
-  throw runtime_error("NaN is detected during Symbolic computation.");
-}
-
-Expression ExpressionNaN::Expand() const {
-  throw runtime_error("NaN is detected during expansion.");
-}
-
-Expression ExpressionNaN::Substitute(const Substitution&) const {
-  throw runtime_error("NaN is detected during substitution.");
-}
-
-Expression ExpressionNaN::Differentiate(const Variable&) const {
-  throw runtime_error("NaN is detected during differentiation.");
-}
-
-ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
 ExpressionAdd::ExpressionAdd(const double constant,
                              const map<Expression, double>& expr_to_coeff_map)
@@ -458,16 +423,16 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
   // Compare constant.
-  if (constant_ != add_e.constant_) {
+  if (!is_equal(constant_, add_e.constant_)) {
     return false;
   }
-  return equal(expr_to_coeff_map_.cbegin(), expr_to_coeff_map_.cend(),
-               add_e.expr_to_coeff_map_.cbegin(),
-               add_e.expr_to_coeff_map_.cend(),
-               [](const pair<Expression, double>& p1,
-                  const pair<Expression, double>& p2) {
-                 return p1.first.EqualTo(p2.first) && p1.second == p2.second;
-               });
+  return equal(
+      expr_to_coeff_map_.cbegin(), expr_to_coeff_map_.cend(),
+      add_e.expr_to_coeff_map_.cbegin(), add_e.expr_to_coeff_map_.cend(),
+      [](const pair<Expression, double>& p1,
+         const pair<Expression, double>& p2) {
+        return p1.first.EqualTo(p2.first) && is_equal(p1.second, p2.second);
+      });
 }
 
 bool ExpressionAdd::Less(const ExpressionCell& e) const {
@@ -715,7 +680,7 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
   // Compare constant.
-  if (constant_ != mul_e.constant_) {
+  if (!is_equal(constant_, mul_e.constant_)) {
     return false;
   }
   // Check each (term, coeff) pairs in two maps.
@@ -1159,26 +1124,11 @@ ostream& ExpressionDiv::Display(ostream& os) const {
 }
 
 double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
-  if (v2 == 0.0) {
-    ostringstream oss;
-    oss << "Division by zero: " << v1 << " / " << v2;
-    this->Display(oss) << endl;
-    throw runtime_error(oss.str());
-  }
   return v1 / v2;
 }
 
 ExpressionLog::ExpressionLog(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Log, e, false} {}
-
-void ExpressionLog::check_domain(const double v) {
-  if (!(v >= 0)) {
-    ostringstream oss;
-    oss << "log(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [0, +oo)" << endl;
-    throw domain_error(oss.str());
-  }
-}
 
 Polynomiald ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
@@ -1202,10 +1152,7 @@ ostream& ExpressionLog::Display(ostream& os) const {
   return os << "log(" << get_argument() << ")";
 }
 
-double ExpressionLog::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::log(v);
-}
+double ExpressionLog::DoEvaluate(const double v) const { return std::log(v); }
 
 ExpressionAbs::ExpressionAbs(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Abs, e, false} {}
@@ -1268,15 +1215,6 @@ double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e, false} {}
 
-void ExpressionSqrt::check_domain(const double v) {
-  if (!(v >= 0)) {
-    ostringstream oss;
-    oss << "sqrt(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [0, +oo)" << endl;
-    throw domain_error(oss.str());
-  }
-}
-
 Polynomiald ExpressionSqrt::ToPolynomial() const {
   throw runtime_error("Sqrt expression is not polynomial-convertible.");
 }
@@ -1299,10 +1237,7 @@ ostream& ExpressionSqrt::Display(ostream& os) const {
   return os << "sqrt(" << get_argument() << ")";
 }
 
-double ExpressionSqrt::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::sqrt(v);
-}
+double ExpressionSqrt::DoEvaluate(const double v) const { return std::sqrt(v); }
 
 ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2,
@@ -1434,15 +1369,6 @@ double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
 ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e, false} {}
 
-void ExpressionAsin::check_domain(const double v) {
-  if (!((v >= -1.0) && (v <= 1.0))) {
-    ostringstream oss;
-    oss << "asin(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [-1.0, +1.0]" << endl;
-    throw domain_error(oss.str());
-  }
-}
-
 Polynomiald ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
 }
@@ -1465,22 +1391,10 @@ ostream& ExpressionAsin::Display(ostream& os) const {
   return os << "asin(" << get_argument() << ")";
 }
 
-double ExpressionAsin::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::asin(v);
-}
+double ExpressionAsin::DoEvaluate(const double v) const { return std::asin(v); }
 
 ExpressionAcos::ExpressionAcos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Acos, e, false} {}
-
-void ExpressionAcos::check_domain(const double v) {
-  if (!((v >= -1.0) && (v <= 1.0))) {
-    ostringstream oss;
-    oss << "acos(" << v << ") : numerical argument out of domain. " << v
-        << " is not in [-1.0, +1.0]" << endl;
-    throw domain_error(oss.str());
-  }
-}
 
 Polynomiald ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
@@ -1504,10 +1418,7 @@ ostream& ExpressionAcos::Display(ostream& os) const {
   return os << "acos(" << get_argument() << ")";
 }
 
-double ExpressionAcos::DoEvaluate(const double v) const {
-  check_domain(v);
-  return std::acos(v);
-}
+double ExpressionAcos::DoEvaluate(const double v) const { return std::acos(v); }
 
 ExpressionAtan::ExpressionAtan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Atan, e, false} {}

@@ -73,19 +73,16 @@ class ExpressionCell {
   virtual Polynomiald ToPolynomial() const = 0;
 
   /** Evaluates under a given environment (by default, an empty environment).
-   *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   virtual double Evaluate(const Environment& env) const = 0;
 
   /** Expands out products and positive integer powers in expression.
-   * @throws std::runtime_error if NaN is detected during expansion.
    */
   virtual Expression Expand() const = 0;
 
   /** Returns an Expression obtained by replacing all occurrences of the
    * variables in @p s in the current expression cell with the corresponding
    * expressions in @p s.
-   * @throws std::runtime_error if NaN is detected during substitution.
    */
   virtual Expression Substitute(const Substitution& s) const = 0;
 
@@ -229,22 +226,6 @@ class ExpressionConstant : public ExpressionCell {
 
  private:
   const double v_{};
-};
-
-/** Symbolic expression representing NaN (not-a-number). */
-class ExpressionNaN : public ExpressionCell {
- public:
-  ExpressionNaN();
-  void HashAppendDetail(DelegatingHasher*) const override;
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
-  bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
-  Expression Expand() const override;
-  Expression Substitute(const Substitution& s) const override;
-  Expression Differentiate(const Variable& x) const override;
-  std::ostream& Display(std::ostream& os) const override;
 };
 
 /** Symbolic expression representing an addition which is a sum of products.
@@ -480,8 +461,6 @@ class ExpressionLog : public UnaryExpressionCell {
   friend Expression log(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -529,8 +508,6 @@ class ExpressionSqrt : public UnaryExpressionCell {
   friend Expression sqrt(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -608,8 +585,6 @@ class ExpressionAsin : public UnaryExpressionCell {
   friend Expression asin(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 
@@ -626,8 +601,6 @@ class ExpressionAcos : public UnaryExpressionCell {
   friend Expression acos(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
-  static void check_domain(double v);
   double DoEvaluate(double v) const override;
 };
 

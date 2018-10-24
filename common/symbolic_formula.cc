@@ -230,6 +230,12 @@ ostream& operator<<(ostream& os, const Formula& f) {
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {
+  if (is_constant(e1) && is_constant(e2)) {
+    // Note that this makes `Expression::NaN() == Expression::NaN()` evaluate to
+    // False, which is matched with its double counterpart, `(NAN == NAN) =>
+    // false`.
+    return Formula{get_constant_value(e1) == get_constant_value(e2)};
+  }
   // Simplification: E1 - E2 == 0  =>  True
   const Expression diff{e1 - e2};
   if (diff.get_kind() == ExpressionKind::Constant) {
@@ -239,6 +245,9 @@ Formula operator==(const Expression& e1, const Expression& e2) {
 }
 
 Formula operator!=(const Expression& e1, const Expression& e2) {
+  if (is_constant(e1) && is_constant(e2)) {
+    return Formula{get_constant_value(e1) != get_constant_value(e2)};
+  }
   // Simplification: E1 - E2 != 0  =>  True
   const Expression diff{e1 - e2};
   if (diff.get_kind() == ExpressionKind::Constant) {
@@ -288,11 +297,17 @@ Formula isnan(const Expression& e) {
 }
 
 Formula isinf(const Expression& e) {
+  if (is_constant(e)) {
+    return Formula{std::isinf(get_constant_value(e))};
+  }
   const double inf{numeric_limits<double>::infinity()};
   return (-inf == e) || (e == inf);
 }
 
 Formula isfinite(const Expression& e) {
+  if (is_constant(e)) {
+    return Formula{std::isfinite(get_constant_value(e))};
+  }
   const double inf{numeric_limits<double>::infinity()};
   return (-inf < e) && (e < inf);
 }
