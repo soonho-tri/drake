@@ -5,7 +5,6 @@
 #include <ios>
 #include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -31,7 +30,6 @@ using std::numeric_limits;
 using std::ostream;
 using std::ostringstream;
 using std::pair;
-using std::runtime_error;
 using std::shared_ptr;
 using std::streamsize;
 using std::string;
@@ -42,19 +40,6 @@ bool operator<(ExpressionKind k1, ExpressionKind k2) {
 }
 
 namespace {
-// This function is used in Expression(const double d) constructor. It turns out
-// a ternary expression "std::isnan(d) ? make_shared<const ExpressionNaN>() :
-// make_shared<const ExpressionConstant>()" does not work due to C++'s
-// type-system. It throws "Incompatible operand types when using ternary
-// conditional operator" error. Related S&O entry:
-// http://stackoverflow.com/questions/29842095/incompatible-operand-types-when-using-ternary-conditional-operator.
-shared_ptr<const ExpressionCell> make_cell(const double d) {
-  if (std::isnan(d)) {
-    return make_shared<const ExpressionNaN>();
-  }
-  return make_shared<const ExpressionConstant>(d);
-}
-
 // Negates an addition expression.
 // - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
 Expression NegateAddition(const Expression& e) {
@@ -72,7 +57,8 @@ Expression NegateMultiplication(const Expression& e) {
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<const ExpressionVar>(var)} {}
-Expression::Expression(const double d) : ptr_{make_cell(d)} {}
+Expression::Expression(const double d)
+    : ptr_{make_shared<const ExpressionConstant>(d)} {}
 Expression::Expression(std::shared_ptr<const ExpressionCell> ptr)
     : ptr_{std::move(ptr)} {}
 
@@ -108,8 +94,7 @@ Expression Expression::E() {
 }
 
 Expression Expression::NaN() {
-  static const never_destroyed<Expression> nan{
-      Expression{make_shared<const ExpressionNaN>()}};
+  static const never_destroyed<Expression> nan{NAN};
   return nan.access();
 }
 
@@ -281,6 +266,15 @@ Expression operator-(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
+  // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+  //
+  // It is necessary to handle this case before `E - E => 0`. For example, when
+  // lhs = ∞ and rhs = ∞, we want lhs - rhs to be NaN to follow the IEEE-754
+  // floating-point semantics instead of simplifying it to be zero.
+  if (is_constant(lhs) && is_constant(rhs)) {
+    lhs = get_constant_value(lhs) - get_constant_value(rhs);
+    return lhs;
+  }
   // Simplification: E - E => 0
   // TODO(soonho-tri): This simplification is not sound since it cancels `E`
   // which might cause 0/0 during evaluation.
@@ -290,11 +284,6 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   }
   // Simplification: x - 0 => x
   if (is_zero(rhs)) {
-    return lhs;
-  }
-  // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
-  if (is_constant(lhs) && is_constant(rhs)) {
-    lhs = get_constant_value(lhs) - get_constant_value(rhs);
     return lhs;
   }
   // x - y => x + (-y)
@@ -345,6 +334,15 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   }
   // Simplification: x * 1 => x
   if (is_one(rhs)) {
+    return lhs;
+  }
+  // It is necessary to handle this case before `E * 0 => 0` and `0 * E =>
+  // 0`. For example, when lhs = 0 and rhs = ∞, we want lhs * rhs to be NaN to
+  // follow the IEEE-754 floating-point semantics instead of simplifying it to
+  // be zero.
+  if (is_constant(lhs) && is_constant(rhs)) {
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
     return lhs;
   }
   // Simplification: (E1 / E2) * (E3 / E4) => (E1 * E3) / (E2 * E4)
@@ -442,11 +440,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       }
     }
   }
-  if (is_constant(lhs) && is_constant(rhs)) {
-    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
-    lhs = Expression{get_constant_value(lhs) * get_constant_value(rhs)};
-    return lhs;
-  }
   // Simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (is_multiplication(lhs)) {
@@ -493,11 +486,6 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
   if (is_constant(lhs) && is_constant(rhs)) {
     const double v1{get_constant_value(lhs)};
     const double v2{get_constant_value(rhs)};
-    if (v2 == 0.0) {
-      ostringstream oss{};
-      oss << "Division by zero: " << v1 << "/" << v2;
-      throw runtime_error(oss.str());
-    }
     lhs = Expression{v1 / v2};
     return lhs;
   }
@@ -541,7 +529,6 @@ Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionLog::check_domain(v);
     return Expression{std::log(v)};
   }
   return Expression{make_shared<const ExpressionLog>(e)};
@@ -567,7 +554,6 @@ Expression sqrt(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionSqrt::check_domain(v);
     return Expression{std::sqrt(v)};
   }
   // Simplification: sqrt(pow(x, 2)) => abs(x)
@@ -638,7 +624,6 @@ Expression asin(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionAsin::check_domain(v);
     return Expression{std::asin(v)};
   }
   return Expression{make_shared<const ExpressionAsin>(e)};
@@ -648,7 +633,6 @@ Expression acos(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
-    ExpressionAcos::check_domain(v);
     return Expression{std::acos(v)};
   }
   return Expression{make_shared<const ExpressionAcos>(e)};
@@ -762,7 +746,9 @@ bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
 bool is_one(const Expression& e) { return is_constant(e, 1.0); }
 bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
-bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
+bool is_nan(const Expression& e) {
+  return is_constant(e) && std::isnan(get_constant_value(e));
+}
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {

@@ -222,8 +222,7 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
 }
 
 TEST_F(SymbolicExpansionTest, NaN) {
-  // NaN should be detected during expansion and throw runtime_error.
-  EXPECT_THROW(Expression::NaN().Expand(), runtime_error);
+  EXPECT_PRED2(ExprEqual, Expression::NaN().Expand(), Expression::NaN());
 }
 
 TEST_F(SymbolicExpansionTest, IfThenElse) {

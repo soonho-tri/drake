@@ -47,9 +47,6 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
     case ExpressionKind::Pow:
       return v->VisitPow(e, std::forward<Args>(args)...);
 
-    case ExpressionKind::NaN:
-      throw std::runtime_error("NaN is detected while visiting an expression.");
-
     case ExpressionKind::Log:
     case ExpressionKind::Abs:
     case ExpressionKind::Exp:
@@ -87,8 +84,6 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
 /// `VisitAtan`, `VisitAtan2`, `VisitSinh`, `VisitCosh`, `VisitTanh`,
 /// `VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
 /// `VisitUninterpretedFunction.
-///
-/// @throws std::runtime_error if NaN is detected during a visit.
 template <typename Result, typename Visitor, typename... Args>
 Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
   switch (e.get_kind()) {
@@ -166,9 +161,6 @@ Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
 
     case ExpressionKind::IfThenElse:
       return v->VisitIfThenElse(e, std::forward<Args>(args)...);
-
-    case ExpressionKind::NaN:
-      throw std::runtime_error("NaN is detected while visiting an expression.");
 
     case ExpressionKind::UninterpretedFunction:
       return v->VisitUninterpretedFunction(e, std::forward<Args>(args)...);
