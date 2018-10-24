@@ -489,7 +489,9 @@ Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
     const double coeff_from_subst{partial_eval_result.first};
     const Monomial& monomial_from_subst{partial_eval_result.second};
     const Expression new_coeff_i{coeff_i_partial_evaluated * coeff_from_subst};
-
+    if (is_zero(new_coeff_i)) {
+      continue;
+    }
     auto it = new_map.find(monomial_from_subst);
     if (it == new_map.end()) {
       new_map.emplace_hint(it, monomial_from_subst, new_coeff_i);
