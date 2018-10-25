@@ -284,6 +284,11 @@ TEST_F(SymbolicExpansionTest, DivideByConstant) {
                -12 * x_ * y_ / x_);
 }
 
+TEST_F(SymbolicExpansionTest, Performance) {
+  const Expression e{pow(x_ + y_ + z_, 50)};
+  std::cerr << is_zero(e.Expand()) << std::endl;
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
