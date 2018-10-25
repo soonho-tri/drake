@@ -534,7 +534,11 @@ Expression ExpressionAdd::Expand() const {
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
   ExpressionAddFactory fac{constant_, {}};
   for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
-    fac.AddExpression(p.first.Substitute(s) * p.second);
+    const Expression substituted{p.first.Substitute(s)};
+    if (is_nan(substituted)) {
+      throw runtime_error("NaN detected during substitutions.");
+    }
+    fac.AddExpression(substituted * p.second);
   }
   return fac.GetExpression();
 }
@@ -800,9 +804,21 @@ Expression ExpressionMul::Expand() const {
 Expression ExpressionMul::Substitute(const Substitution& s) const {
   ExpressionMulFactory fac;
   for (const pair<const Expression, Expression>& p : base_to_exponent_map_) {
-    fac.AddExpression(pow(p.first.Substitute(s), p.second.Substitute(s)));
+    const Expression substituted_base{p.first.Substitute(s)};
+    if (is_nan(substituted_base)) {
+      throw runtime_error("NaN detected during substitutions.");
+    }
+    const Expression substituted_exponent{p.second.Substitute(s)};
+    if (is_nan(substituted_exponent)) {
+      throw runtime_error("NaN detected during substitutions.");
+    }
+    fac.AddExpression(pow(substituted_base, substituted_exponent));
   }
-  return constant_ * fac.GetExpression();
+  const Expression substituted{fac.GetExpression()};
+  if (is_nan(substituted)) {
+    throw runtime_error("NaN detected during substitutions.");
+  }
+  return constant_ * substituted;
 }
 
 // Computes ∂/∂x pow(f, g).

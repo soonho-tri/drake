@@ -57,10 +57,13 @@ void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
   for (const pair<Variable, Expression>& p : s) {
     args1.emplace_back(p.first);
     args2.push_back(p.second);
+    std::cerr << p.first << " => " << p.second << std::endl;
   }
 
   Expression apply_subst{0.0};
   try {
+    std::cerr << "apply         = " << f(args1) << "\n";
+    std::cerr << "apply + subst = " << f(args1).Substitute(s) << "\n";
     apply_subst = f(args1).Substitute(s);
   } catch (const exception&) {
     // If apply_subst throws an exception, then subst_apply should
@@ -573,6 +576,16 @@ TEST_F(ForallFormulaSubstitutionTest, VarExprSubstitution) {
   }
 }
 
+// TEST_F(ForallFormulaSubstitutionTest, CC) {
+//   std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+//   const Expression e1{log(x_)};
+//   const Expression e2{asin(x_)};
+//   const Expression e3{e1 * e2};
+//   std::cerr << "e1 subst = " << e1.Substitute(var_x_, 0.0) << std::endl;
+//   std::cerr << "e2 subst = " << e2.Substitute(var_x_, 0.0) << std::endl;
+//   std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+//   std::cerr << "e3 subst = " << e3.Substitute(var_x_, 0.0) << std::endl;
+// }
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
