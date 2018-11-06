@@ -599,6 +599,22 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
   return oss.str();
 }
 
+string CodeGen2(const string& function_name, const vector<Variable>& parameters,
+                const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M) {
+  DRAKE_ASSERT(M.isCompressed());
+  ostringstream oss;
+  // Print Header
+  oss << "void " << function_name << "(const double* p, double* values) {\n";
+  const Expression* p{M.valuePtr()};
+  for (int i = 0; i < M.nonZeros(); ++i) {
+    oss << "    "
+        << "values[" << i << "] = " << (p + i)->CodeGen(parameters) << ";\n";
+  }
+  // Print footer
+  oss << "}\n";
+  return oss.str();
+}
+
 Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {

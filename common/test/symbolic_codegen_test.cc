@@ -122,6 +122,42 @@ GTEST_TEST(SymbolicCodeGenTest, SparseMatrix) {
   EXPECT_EQ(values[2], 2.0 * 2.0);
 }
 
+GTEST_TEST(SymbolicCodeGenTest, SparseMatrix2) {
+  const Variable x{"x"};
+  const Variable y{"y"};
+  // | x+y 0   0   0 0|
+  // |   0 0 x/2   0 0|
+  // |   0 0   0 y*y 0|
+  // |   0 0   0   0 0|
+  Eigen::SparseMatrix<Expression> m(4, 4);
+  m.insert(0, 0) = x + y;
+  m.insert(2, 3) = y * y;
+  m.insert(1, 2) = x / 2.0;
+  m.makeCompressed();
+
+  TccContext context;
+  context.AddCode(CodeGen2("f", {x, y}, m));
+  context.Compile();
+  using FuncType = void (*)(const double*, double*);
+  const Eigen::Vector2d param{1 /* x */, 2 /* y */};
+  const Environment env = {{x, 1.0}, {y, 2.0}};
+  FuncType f = context.GetSymbol<FuncType>("f");
+
+  std::array<double, 3 /* nonzeros */> values;
+  f(param.data(), values.data());
+
+  Eigen::Map<Eigen::SparseMatrix<double>> map_sp(
+      m.rows(), m.cols(), m.nonZeros(), m.outerIndexPtr(), m.innerIndexPtr(),
+      values.data());
+
+  Eigen::SparseMatrix<double> m_double = map_sp.eval();
+  Eigen::SparseMatrix<double> m_double_expected(4, 4);
+  m_double_expected.insert(0, 0) = 1 + 2;
+  m_double_expected.insert(2, 3) = 2 * 2;
+  m_double_expected.insert(1, 2) = 1 / 2.0;
+  EXPECT_EQ((m_double - m_double_expected).norm(), 0.0);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

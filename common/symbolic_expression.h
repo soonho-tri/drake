@@ -1003,6 +1003,10 @@ std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
                     const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M);
 
+std::string CodeGen2(
+    const std::string& function_name, const std::vector<Variable>& parameters,
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M);
+
 }  // namespace symbolic
 
 /*
