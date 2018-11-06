@@ -1,5 +1,7 @@
+#include <array>
 #include <iostream>
 
+#include <Eigen/Sparse>
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
@@ -80,6 +82,44 @@ GTEST_TEST(SymbolicCodeGenTest, DenseMatrix) {
   EXPECT_EQ(evaluated(0, 1), m(0, 1).Evaluate(env));
   EXPECT_EQ(evaluated(1, 0), m(1, 0).Evaluate(env));
   EXPECT_EQ(evaluated(1, 1), m(1, 1).Evaluate(env));
+}
+
+GTEST_TEST(SymbolicCodeGenTest, SparseMatrix) {
+  const Variable x{"x"};
+  const Variable y{"y"};
+  // | x+y 0   0   0 0|
+  // |   0 0 x/2   0 0|
+  // |   0 0   0 y*y 0|
+  // |   0 0   0   0 0|
+  Eigen::SparseMatrix<Expression> m(4, 4);
+  m.insert(0, 0) = x + y;
+  m.insert(2, 3) = y * y;
+  m.insert(1, 2) = x / 2.0;
+
+  TccContext context;
+  context.AddCode(CodeGen("f", {x, y}, m));
+  context.Compile();
+  using FuncType = void (*)(const double*, int*, int*, double*);
+  const Eigen::Vector2d param{1 /* x */, 2 /* y */};
+  const Environment env = {{x, 1.0}, {y, 2.0}};
+  FuncType f = context.GetSymbol<FuncType>("f");
+
+  std::array<int, 3> cols;
+  std::array<int, 3> rows;
+  std::array<double, 3> values;
+  f(param.data(), cols.data(), rows.data(), values.data());
+
+  EXPECT_EQ(cols[0], 0);
+  EXPECT_EQ(rows[0], 0);
+  EXPECT_EQ(values[0], 1 + 2);
+
+  EXPECT_EQ(cols[1], 2);
+  EXPECT_EQ(rows[1], 1);
+  EXPECT_EQ(values[1], 1.0 / 2);
+
+  EXPECT_EQ(cols[2], 3);
+  EXPECT_EQ(rows[2], 2);
+  EXPECT_EQ(values[2], 2.0 * 2.0);
 }
 
 }  // namespace

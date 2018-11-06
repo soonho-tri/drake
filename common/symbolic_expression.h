@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -997,6 +998,10 @@ std::string CodeGen(const std::string& function_name,
 std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
                     const Eigen::Ref<const MatrixX<Expression>>& M);
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M);
 
 }  // namespace symbolic
 

@@ -575,6 +575,30 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
   return oss.str();
 }
 
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M1) {
+  ostringstream oss;
+  Eigen::SparseMatrix<Expression> M{M1};
+  // Print Header
+  oss << "void " << function_name
+      << "(const double* p, int* cols, int* rows, double* values) {\n";
+  for (int i = 0, k = 0; k < M.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<Expression>::InnerIterator it(M, k); it;
+         ++it, ++i) {
+      oss << "    "
+          << "cols[" << i << "] = " << it.col() << ";\n";
+      oss << "    "
+          << "rows[" << i << "] = " << it.row() << ";\n";
+      oss << "    "
+          << "values[" << i << "] = " << it.value().CodeGen(parameters)
+          << ";\n";
+    }
+  }
+  // Print footer
+  oss << "}\n";
+  return oss.str();
+}
+
 Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
