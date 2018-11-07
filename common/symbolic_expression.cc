@@ -552,11 +552,11 @@ ostream& operator<<(ostream& os, const Expression& e) {
 string CodeGen(const string& function_name, const vector<Variable>& parameters,
                const Expression& e) {
   ostringstream oss;
-  // Print Header
+  // Print header.
   oss << "double " << function_name << "(const double* p) {\n";
   // Codegen the expression.
   oss << "    return " << e.CodeGen(parameters) << ";\n";
-  // Print footer
+  // Print footer.
   oss << "}\n";
   return oss.str();
 }
@@ -564,13 +564,14 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
 string CodeGen(const string& function_name, const vector<Variable>& parameters,
                const Eigen::Ref<const MatrixX<Expression>>& M) {
   ostringstream oss;
-  // Print Header
+  // Print header.
   oss << "void " << function_name << "(const double* p, double* m) {\n";
+  // Print body.
   for (int i = 0; i < M.cols() * M.rows(); ++i) {
     oss << "    "
         << "m[" << i << "] = " << M.data()[i].CodeGen(parameters) << ";\n";
   }
-  // Print footer
+  // Print footer.
   oss << "}\n";
   return oss.str();
 }
@@ -579,9 +580,10 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
                const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M1) {
   ostringstream oss;
   Eigen::SparseMatrix<Expression> M{M1};
-  // Print Header
+  // Print header.
   oss << "void " << function_name
       << "(const double* p, int* cols, int* rows, double* values) {\n";
+  // Print body.
   for (int i = 0, k = 0; k < M.outerSize(); ++k) {
     for (Eigen::SparseMatrix<Expression>::InnerIterator it(M, k); it;
          ++it, ++i) {
@@ -594,7 +596,7 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
           << ";\n";
     }
   }
-  // Print footer
+  // Print footer.
   oss << "}\n";
   return oss.str();
 }
@@ -603,14 +605,26 @@ string CodeGen2(const string& function_name, const vector<Variable>& parameters,
                 const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M) {
   DRAKE_ASSERT(M.isCompressed());
   ostringstream oss;
-  // Print Header
-  oss << "void " << function_name << "(const double* p, double* values) {\n";
-  const Expression* p{M.valuePtr()};
+  // Print header.
+  oss << "void " << function_name << "(const double* p"
+      << ", int* outerindices"
+      << ", int* innerindices"
+      << ", double* values) {\n";
+  // Print body.
+  for (int i = 0; i < M.cols() + 1; ++i) {
+    oss << "    "
+        << "outerindices[" << i << "] = " << *(M.outerIndexPtr() + i) << ";\n";
+  }
+  for (int i = 0; i < M.nonZeros(); ++i) {
+    oss << "    "
+        << "innerindices[" << i << "] = " << *(M.innerIndexPtr() + i) << ";\n";
+  }
+  const Expression* const p{M.valuePtr()};
   for (int i = 0; i < M.nonZeros(); ++i) {
     oss << "    "
         << "values[" << i << "] = " << (p + i)->CodeGen(parameters) << ";\n";
   }
-  // Print footer
+  // Print footer.
   oss << "}\n";
   return oss.str();
 }

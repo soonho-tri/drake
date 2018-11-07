@@ -99,6 +99,20 @@ GTEST_TEST(SymbolicCodeGenTest, SparseMatrix) {
   TccContext context;
   context.AddCode(CodeGen("f", {x, y}, m));
   context.Compile();
+
+  // Generated Code
+  //
+  // void f(const double* p, int* cols, int* rows, double* values) {
+  //     cols[0] = 0;
+  //     rows[0] = 0;
+  //     values[0] = (0 + p[0] + p[1]);
+  //     cols[1] = 2;
+  //     rows[1] = 1;
+  //     values[1] = (p[0] / 2.000000);
+  //     cols[2] = 3;
+  //     rows[2] = 2;
+  //     values[2] = pow(p[1], 2.000000);
+  // }
   using FuncType = void (*)(const double*, int*, int*, double*);
   const Eigen::Vector2d param{1 /* x */, 2 /* y */};
   const Environment env = {{x, 1.0}, {y, 2.0}};
@@ -109,52 +123,94 @@ GTEST_TEST(SymbolicCodeGenTest, SparseMatrix) {
   std::array<double, 3> values;
   f(param.data(), cols.data(), rows.data(), values.data());
 
-  EXPECT_EQ(cols[0], 0);
-  EXPECT_EQ(rows[0], 0);
-  EXPECT_EQ(values[0], 1 + 2);
+  // Construct an evaluated matrix.
+  Eigen::SparseMatrix<double> m_double(m.rows(), m.cols());
+  for (int i = 0; i < 3; ++i) {
+    m_double.insert(rows[i], cols[i]) = values[i];
+  }
+  m_double.makeCompressed();
 
-  EXPECT_EQ(cols[1], 2);
-  EXPECT_EQ(rows[1], 1);
-  EXPECT_EQ(values[1], 1.0 / 2);
+  // Construct the expected one.
+  Eigen::SparseMatrix<double> m_double_expected(m.rows(), m.cols());
+  m_double_expected.insert(0, 0) = m.coeffRef(0, 0).Evaluate(env);
+  m_double_expected.insert(2, 3) = m.coeffRef(2, 3).Evaluate(env);
+  m_double_expected.insert(1, 2) = m.coeffRef(1, 2).Evaluate(env);
 
-  EXPECT_EQ(cols[2], 3);
-  EXPECT_EQ(rows[2], 2);
-  EXPECT_EQ(values[2], 2.0 * 2.0);
+  // Make sure the two are the same.
+  EXPECT_EQ((m_double - m_double_expected).norm(), 0.0);
 }
 
 GTEST_TEST(SymbolicCodeGenTest, SparseMatrix2) {
   const Variable x{"x"};
   const Variable y{"y"};
-  // | x+y 0   0   0 0|
-  // |   0 0 x/2   0 0|
-  // |   0 0   0 y*y 0|
-  // |   0 0   0   0 0|
-  Eigen::SparseMatrix<Expression> m(4, 4);
-  m.insert(0, 0) = x + y;
-  m.insert(2, 3) = y * y;
-  m.insert(1, 2) = x / 2.0;
+  const Variable z{"z"};
+  // | x  0  0  0  z  0|
+  // | 0  0  y  0  0  x|
+  // | 0  0  0  y  0  y|
+  Eigen::SparseMatrix<Expression> m(3, 6);
+  m.insert(0, 0) = x;
+  m.insert(0, 4) = z;
+  m.insert(1, 2) = y;
+  m.insert(1, 5) = x;
+  m.insert(2, 3) = y;
+  m.insert(2, 5) = y;
   m.makeCompressed();
 
   TccContext context;
-  context.AddCode(CodeGen2("f", {x, y}, m));
+  context.AddCode(CodeGen2("f", {x, y, z}, m));
   context.Compile();
-  using FuncType = void (*)(const double*, double*);
-  const Eigen::Vector2d param{1 /* x */, 2 /* y */};
-  const Environment env = {{x, 1.0}, {y, 2.0}};
+  // Generated Code
+  //
+  // void f(const double* p, int* outerindices, int* innerindices,
+  //        double* values) {
+  //   outerindices[0] = 0;
+  //   outerindices[1] = 1;
+  //   outerindices[2] = 1;
+  //   outerindices[3] = 2;
+  //   outerindices[4] = 3;
+  //   outerindices[5] = 4;
+  //   outerindices[6] = 6;
+  //
+  //   innerindices[0] = 0;
+  //   innerindices[1] = 1;
+  //   innerindices[2] = 2;
+  //   innerindices[3] = 0;
+  //   innerindices[4] = 1;
+  //   innerindices[5] = 2;
+  //
+  //   values[0] = pow(p[0], 2.000000);
+  //   values[1] = p[1];
+  //   values[2] = p[1];
+  //   values[3] = p[2];
+  //   values[4] = (0 + p[0] + p[1]);
+  //   values[5] = (p[1] / 2.000000);
+  // }
+
+  using FuncType = void (*)(const double*, int*, int*, double*);
   FuncType f = context.GetSymbol<FuncType>("f");
+  const Eigen::Vector3d param{1 /* x */, 2 /* y */, 3 /* z */};
+  const Environment env = {{x, 1.0}, {y, 2.0}, {z, 3.0}};
+  std::array<int, 6 + 1 /* cols + 1 */> outerindices;
+  std::array<int, 6 /* nonzeros */> innerindices;
+  std::array<double, 6 /* nonzeros */> values;
+  f(param.data(), outerindices.data(), innerindices.data(), values.data());
 
-  std::array<double, 3 /* nonzeros */> values;
-  f(param.data(), values.data());
-
+  // Construct an evaluated matrix using Eigen::Map.
   Eigen::Map<Eigen::SparseMatrix<double>> map_sp(
-      m.rows(), m.cols(), m.nonZeros(), m.outerIndexPtr(), m.innerIndexPtr(),
-      values.data());
-
+      m.rows(), m.cols(), m.nonZeros(), outerindices.data(),
+      innerindices.data(), values.data());
   Eigen::SparseMatrix<double> m_double = map_sp.eval();
-  Eigen::SparseMatrix<double> m_double_expected(4, 4);
-  m_double_expected.insert(0, 0) = 1 + 2;
-  m_double_expected.insert(2, 3) = 2 * 2;
-  m_double_expected.insert(1, 2) = 1 / 2.0;
+
+  // Construct the expected one.
+  Eigen::SparseMatrix<double> m_double_expected(m.rows(), m.cols());
+  m_double_expected.insert(0, 0) = m.coeffRef(0, 0).Evaluate(env);
+  m_double_expected.insert(0, 4) = m.coeffRef(0, 4).Evaluate(env);
+  m_double_expected.insert(1, 2) = m.coeffRef(1, 2).Evaluate(env);
+  m_double_expected.insert(1, 5) = m.coeffRef(1, 5).Evaluate(env);
+  m_double_expected.insert(2, 3) = m.coeffRef(2, 3).Evaluate(env);
+  m_double_expected.insert(2, 5) = m.coeffRef(2, 5).Evaluate(env);
+
+  // Make sure the two are the same.
   EXPECT_EQ((m_double - m_double_expected).norm(), 0.0);
 }
 
