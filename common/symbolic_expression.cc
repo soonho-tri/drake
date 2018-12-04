@@ -35,6 +35,7 @@ using std::runtime_error;
 using std::shared_ptr;
 using std::streamsize;
 using std::string;
+using std::unordered_map;
 using std::vector;
 
 bool operator<(ExpressionKind k1, ExpressionKind k2) {
@@ -212,6 +213,17 @@ string Expression::to_string() const {
   ostringstream oss;
   oss << *this;
   return oss.str();
+}
+
+string Expression::CodeGen(const vector<Variable>& parameters) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  // Codegen the expression.
+  return CodeGenVisitor(id_to_idx_map).CodeGen(*this);
 }
 
 Expression operator+(Expression lhs, const Expression& rhs) {
@@ -535,6 +547,86 @@ ostream& operator<<(ostream& os, const Expression& e) {
   const PrecisionGuard precision_guard{&os,
                                        numeric_limits<double>::max_digits10};
   return e.ptr_->Display(os);
+}
+
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Expression& e) {
+  ostringstream oss;
+  // Print header.
+  oss << "double " << function_name << "(const double* p) {\n";
+  // Codegen the expression.
+  oss << "    return " << e.CodeGen(parameters) << ";\n";
+  // Print footer.
+  oss << "}\n";
+  return oss.str();
+}
+
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Eigen::Ref<const MatrixX<Expression>>& M) {
+  ostringstream oss;
+  // Print header.
+  oss << "void " << function_name << "(const double* p, double* m) {\n";
+  // Print body.
+  for (int i = 0; i < M.cols() * M.rows(); ++i) {
+    oss << "    "
+        << "m[" << i << "] = " << M.data()[i].CodeGen(parameters) << ";\n";
+  }
+  // Print footer.
+  oss << "}\n";
+  return oss.str();
+}
+
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M1) {
+  ostringstream oss;
+  Eigen::SparseMatrix<Expression> M{M1};
+  // Print header.
+  oss << "void " << function_name
+      << "(const double* p, int* cols, int* rows, double* values) {\n";
+  // Print body.
+  for (int i = 0, k = 0; k < M.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<Expression>::InnerIterator it(M, k); it;
+         ++it, ++i) {
+      oss << "    "
+          << "cols[" << i << "] = " << it.col() << ";\n";
+      oss << "    "
+          << "rows[" << i << "] = " << it.row() << ";\n";
+      oss << "    "
+          << "values[" << i << "] = " << it.value().CodeGen(parameters)
+          << ";\n";
+    }
+  }
+  // Print footer.
+  oss << "}\n";
+  return oss.str();
+}
+
+string CodeGen2(const string& function_name, const vector<Variable>& parameters,
+                const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M) {
+  DRAKE_ASSERT(M.isCompressed());
+  ostringstream oss;
+  // Print header.
+  oss << "void " << function_name << "(const double* p"
+      << ", int* outerindices"
+      << ", int* innerindices"
+      << ", double* values) {\n";
+  // Print body.
+  for (int i = 0; i < M.cols() + 1; ++i) {
+    oss << "    "
+        << "outerindices[" << i << "] = " << *(M.outerIndexPtr() + i) << ";\n";
+  }
+  for (int i = 0; i < M.nonZeros(); ++i) {
+    oss << "    "
+        << "innerindices[" << i << "] = " << *(M.innerIndexPtr() + i) << ";\n";
+  }
+  const Expression* const p{M.valuePtr()};
+  for (int i = 0; i < M.nonZeros(); ++i) {
+    oss << "    "
+        << "values[" << i << "] = " << (p + i)->CodeGen(parameters) << ";\n";
+  }
+  // Print footer.
+  oss << "}\n";
+  return oss.str();
 }
 
 Expression log(const Expression& e) {

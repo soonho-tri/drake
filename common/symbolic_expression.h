@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -286,6 +287,9 @@ class Expression {
 
   /** Returns string representation of Expression. */
   std::string to_string() const;
+
+  /** Generates code (TODO). */
+  std::string CodeGen(const std::vector<Variable>& parameters) const;
 
   /** Returns zero. */
   static Expression Zero();
@@ -986,6 +990,22 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   // structural equality between two expressions.
   return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
 }
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Expression& e);
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Eigen::Ref<const MatrixX<Expression>>& M);
+
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M);
+
+std::string CodeGen2(
+    const std::string& function_name, const std::vector<Variable>& parameters,
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M);
 
 }  // namespace symbolic
 
