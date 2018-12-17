@@ -260,6 +260,8 @@ class Formula {
   friend std::shared_ptr<const FormulaPositiveSemidefinite>
   to_positive_semidefinite(const Formula& f);
 
+  auto use_count() const { return ptr_.use_count(); }
+
  private:
   void HashAppend(DelegatingHasher* hasher) const;
 
@@ -267,6 +269,8 @@ class Formula {
   // be shared by multiple formulas, a formula should _not_ be able to change
   // the cell that it points to.
   std::shared_ptr<const FormulaCell> ptr_;
+
+  friend Formula operator&&(Formula&& f1, const Formula& f2);
 };
 
 /** Returns a formula @p f, universally quantified by variables @p vars. */
@@ -284,6 +288,8 @@ Formula forall(const Variables& vars, const Formula& f);
  */
 Formula make_conjunction(const std::set<Formula>& formulas);
 Formula operator&&(const Formula& f1, const Formula& f2);
+Formula operator&&(Formula&& f1, const Formula& f2);
+
 Formula operator&&(const Variable& v, const Formula& f);
 Formula operator&&(const Formula& f, const Variable& v);
 Formula operator&&(const Variable& v1, const Variable& v2);

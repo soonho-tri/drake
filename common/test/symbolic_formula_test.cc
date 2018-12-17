@@ -1420,6 +1420,19 @@ TEST_F(SymbolicFormulaTest, EvaluateFormulasIncludingRandomVariables) {
   }
 }
 
+TEST_F(SymbolicFormulaTest, ZZZZzzzz) {
+  // Zzzz
+  auto f1 = x_ == 1;
+  auto f2 = x_ == 2;
+  auto f3 = x_ == 3;
+  auto f4 = x_ == 4;
+
+  std::cerr << "----------------------\n";
+  std::cerr << f1.use_count() << "\n";
+  auto f = f1 && f2 && f3 && f4;
+  std::cerr << "F = " << f << std::endl;
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

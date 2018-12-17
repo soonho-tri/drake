@@ -135,12 +135,14 @@ class NaryFormulaCell : public FormulaCell {
   bool Less(const FormulaCell& f) const override;
   /** Returns the formulas. */
   const std::set<Formula>& get_operands() const { return formulas_; }
+  /** Returns the formulas. */
+  std::set<Formula>& get_mutable_operands() { return formulas_; }
 
  protected:
   std::ostream& DisplayWithOp(std::ostream& os, const std::string& op) const;
 
  private:
-  const std::set<Formula> formulas_;
+  std::set<Formula> formulas_;
 };
 
 /** Symbolic formula representing true. */

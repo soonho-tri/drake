@@ -159,6 +159,35 @@ Formula make_conjunction(const set<Formula>& formulas) {
 }
 
 Formula operator&&(const Formula& f1, const Formula& f2) {
+  // std::cerr << "operator&&(const Formula& f1, const Formula& f2): " << f1 <<
+  // " "
+  //           << f2 << "\n";
+  return make_conjunction({f1, f2});
+}
+
+Formula operator&&(Formula&& f1, const Formula& f2) {
+  // std::cerr << "operator&&(Formula&& f1, const Formula& f2) " << f1 << " " <<
+  // f2
+  //           << "\n";
+  if (is_conjunction(f1)) {
+    if (f1.ptr_.use_count() == 1) {
+      auto& const_nary_cell =
+          *(std::static_pointer_cast<const NaryFormulaCell>(f1.ptr_));
+
+      std::set<Formula> set{
+          const_cast<drake::symbolic::NaryFormulaCell&>(const_nary_cell)
+              .get_mutable_operands()};
+
+      if (is_conjunction(f2)) {
+        for (const Formula& f_in_f2 : get_operands(f2)) {
+          set.insert(f_in_f2);
+        }
+      } else {
+        set.insert(f2);
+      }
+      return std::move(f1);
+    }
+  }
   return make_conjunction({f1, f2});
 }
 
