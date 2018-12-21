@@ -782,18 +782,18 @@ auto operator*(
   return t1.template cast<Expression>() * t2;
 }
 
-/// Evaluates a symbolic matrix `m` using @p env and @p random_generator.
+/// Evaluates a symbolic matrix @p m using @p env and @p random_generator.
 ///
-/// When @p random_generator is non-null, it extends `env` by sampling values
-/// for the random variables in `m`. Then it uses this extended environment to
-/// evaluate all the expressions in `m`. This makes sure that one value is used
-/// to substitute all the occurrences of the corresponding random variable in
-/// `m`.
+/// When @p random_generator is non-null, it extends @p env by sampling values
+/// for the random variables in @p m. Then it uses this extended environment to
+/// evaluate all the expressions in @p m. This makes sure that one value is used
+/// to substitute all the occurrences of the corresponding random variable in @p
+/// m.
 ///
-/// @returns a matrix of double whose size is the size of `m`.
+/// @returns a matrix of double whose size is the size of @p m.
 /// @throws std::runtime_error if NaN is detected during evaluation.
-/// @throws std::runtime_error if `m` includes random variables but
-///                               `random_generator` is `nullptr`.
+/// @throws std::runtime_error if @p m includes random variables but
+///                               @p random_generator is `nullptr`.
 template <typename Derived>
 auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env,
               RandomGenerator* random_generator = nullptr) {
