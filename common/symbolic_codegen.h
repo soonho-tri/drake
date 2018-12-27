@@ -67,10 +67,20 @@ class CodeGenVisitor {
   const IdToIndexMap& id_to_idx_map_;
 };
 
+/// @defgroup codegen Code Generation
+/// @{
+/// Provides `CodeGen` functions which generate C99 code to evaluate symbolic
+/// expressions and matrices.
+///
+/// @note Generated code does not include any headers while it may use math
+/// functions defined in `<math.h>` such as `sin`, `cos`, `exp`, and `log`. A
+/// user of generated code is responsible to include `<math.h>` if needed to
+/// compile generated code.
+
 /// For a given symbolic expression @p e, generates two C functions, @p
-/// function_name and `function_name_in`. The generated `function_name` takes an
-/// array of doubles for parameters and returns an evaluation
-/// result. `function_name_in` returns the length of @p parameters.
+/// function_name and `function_name_in`. The generated `function_name` function
+/// takes an array of doubles for parameters and returns an evaluation result.
+/// `function_name_in` returns the length of @p parameters.
 ///
 /// @param[in] function_name Name of the generated C function.
 /// @param[in] parameters    Vector of variables provide the ordering of
@@ -80,22 +90,18 @@ class CodeGenVisitor {
 /// For example, `Codegen("f", {x, y}, 1 + sin(x) + cos(y))` generates the
 /// following string.
 ///
-/// <pre>
+/// @code
 /// double f(const double* p) {
 ///     return (1 + sin(p[0]) + cos(p[1]));
 /// }
 /// int f_in() {
 ///     return 2;  // size of `{x, y}`.
 /// }
-/// </pre>
+/// @endcode
 ///
 /// Note that in this example `x` and `y` are mapped to `p[0]` and `p[1]`
 /// respectively because we passed `{x, y}` to `Codegen`.
 ///
-/// Note that generated code does not include any headers while it may use math
-/// functions defined in `<math.h>` such as sin, cos, exp, and log. A user of
-/// generated code is responsible to include `<math.h>` if needed to compile
-/// generated code.
 std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
                     const Expression& e);
@@ -143,9 +149,9 @@ std::string CodeGen(const std::string& function_name,
 /// }
 /// @endcode
 ///
-/// Note that in the example, the matrix `M` is stored in column-major order and
-/// the `CodeGen` function respects the storage order in the generated code. If
-/// `M` were stored in row-major order, `CodeGen` would return the following:
+/// Note that in this example, the matrix `M` is stored in column-major order
+/// and the `CodeGen` function respects the storage order in the generated code.
+/// If `M` were stored in row-major order, `CodeGen` would return the following:
 ///
 /// void f(const double* p, double* m) {
 ///     m[0] = 1.000000;
@@ -153,11 +159,6 @@ std::string CodeGen(const std::string& function_name,
 ///     m[2] = (3 + p[0] + p[1]);
 ///     m[3] = sin(p[0]);
 /// }
-///
-/// Note that generated code does not include any headers while it may use math
-/// functions defined in `<math.h>` such as sin, cos, exp, and log. A user of
-/// generated code is responsible to include `<math.h>` if needed to compile
-/// generated code.
 template <typename Derived>
 std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
@@ -178,20 +179,19 @@ std::string CodeGen(const std::string& function_name,
   }
   // Add footer for the main function.
   oss << "}\n";
-  /// Handle `function_name_in`.
-  oss << "int " << function_name << "_in() {\n"
-      << "    return " << parameters.size() << ";\n"
-      << "}\n";
-  /// Handle `function_name_rows`.
-  oss << "int " << function_name << "_rows() {\n"
-      << "    return " << M.rows() << ";\n"
-      << "}\n";
-  /// Handle `function_name_cols`.
-  oss << "int " << function_name << "_cols() {\n"
-      << "    return " << M.cols() << ";\n"
-      << "}\n";
+  oss << "typedef struct {\n"
+         "    /* p: input, vector */\n"
+         "    struct { int size; } p;\n"
+         "    /* m: output, matrix */\n"
+         "    struct { int rows; int cols; } m;\n"
+         "} "
+      << function_name << "_meta_t;\n";
+  oss << function_name << "_meta_t " << function_name << "_meta() { return {{"
+      << parameters.size() << "}, {" << M.rows() << ", " << M.cols()
+      << "}}; }\n";
   return oss.str();
 }
+/// @} End of codegen group.
 
 }  // namespace symbolic
 }  // namespace drake

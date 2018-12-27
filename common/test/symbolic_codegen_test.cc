@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -45,14 +46,21 @@ string MakeDenseMatrixFunctionCode(const string& function_name, const int in,
     oss << fmt::format("    m[{}] = {};\n", i, expressions[i]);
   }
   oss << "}\n";
-  // f_in.
-  oss << fmt::format("int {}_in() {{\n    return {};\n}}\n", function_name, in);
-  // f_rows.
-  oss << fmt::format("int {}_rows() {{\n    return {};\n}}\n", function_name,
-                     rows);
-  // f_cols.
-  oss << fmt::format("int {}_cols() {{\n    return {};\n}}\n", function_name,
-                     cols);
+  // f_meta_t.
+  oss << fmt::format(
+      "typedef struct {{\n"
+      "    /* p: input, vector */\n"
+      "    struct {{ int size; }} p;\n"
+      "    /* m: output, matrix */\n"
+      "    struct {{ int rows; int cols; }} m;\n"
+      "}} {}_meta_t;\n",
+      function_name);
+  // f_meta.
+  oss << fmt::format(
+      "{0}_meta_t {0}_meta() {{ return {{{{{1}}}, {{{2}, {3}}}}}; }}\n",
+      function_name, in, rows, cols);
+  std::cerr << "------------------\n"
+            << oss.str() << "----------------------\n";
   return oss.str();
 }
 
@@ -277,6 +285,37 @@ TEST_F(SymbolicCodeGenTest, DenseMatrixExampleInDocumentation) {
             MakeDenseMatrixFunctionCode("f", 2 /* number of input parameters */,
                                         2 /* number of rows */,
                                         2 /* number of columns */, expected));
+}
+
+void f(const double* p, double* m) {
+  m[0] = 1.000000;
+  m[1] = (3 + p[0] + p[1]);
+  m[2] = (4 * p[1]);
+  m[3] = sin(p[0]);
+}
+typedef struct {
+  /* p: input, vector */
+  struct {
+    int size;
+  } p;
+  /* m: output, matrix */
+  struct {
+    int rows;
+    int cols;
+  } m;
+} f_meta_t;
+f_meta_t f_meta() { return {{2}, {2, 2}}; }
+
+TEST_F(SymbolicCodeGenTest, Test) {
+  f_meta_t meta{f_meta()};
+  MatrixX<double> m(meta.m.cols, meta.m.rows);
+  VectorX<double> v(meta.p.size);
+  v(0) = 1.0;
+  v(1) = 2.0;
+
+  f(v.data(), m.data());
+
+  std::cerr << m << std::endl;
 }
 
 }  // namespace
