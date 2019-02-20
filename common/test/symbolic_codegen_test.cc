@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
+#include "inja/inja.hpp"
 
 #include "drake/common/symbolic.h"
 

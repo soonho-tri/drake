@@ -871,6 +871,7 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
+        "@inja",
     ],
 )
 
