@@ -1,0 +1,24 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "inja",
+    hdrs = ["single_include/inja/inja.hpp"],
+    includes = ["single_include"],
+    deps = ["@json"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)
