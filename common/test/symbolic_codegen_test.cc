@@ -2,9 +2,10 @@
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
-#include "inja/inja.hpp"
+#include <inja/inja.hpp>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_codegen_util.h"
 
 namespace drake {
 namespace symbolic {
@@ -169,6 +170,46 @@ TEST_F(SymbolicCodeGenTest, ExampleInDocumentation) {
             MakeFunctionCode("f", 2, "(1 + sin(p[0]) + cos(p[1]))"));
 }
 
+using std::cerr;
+using std::endl;
+
+TEST_F(SymbolicCodeGenTest, InjaTest) {
+  // using namespace inja;
+  using json = nlohmann::json;
+
+  inja::Environment env;
+  const string template_filename{"common/test/codegen.h.template"};
+  inja::Template templ{env.parse_template(template_filename)};
+
+  OrderedDocumentedSymbolDict p{"Parameters", "Vector of vehicle parameters"};
+  p.AddMember("l_f", "m", "Distance from mass center to front contact");
+  p.AddMember("l_r", "m", "Distance from mass center to read contact");
+  p.AddMember("cp_x", "m",
+              "Distance in x direction from mass center to control");
+  p.AddMember("cp_y", "m",
+              "Distance in y direction from mass center to control");
+
+  json data;
+  data["namespace"] = {"drake", "test"};
+  data["real_type"] = "double";
+  data["vectors"] = {p.ToJson()};
+
+  const string output{env.render(templ, data)};
+  cerr << output << endl;
+}  // namespace
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
+
+// OrderedDocumentedSymbolDict x{"State", "Vector of vehicle states"};
+// x.AddMember("x_mc", "m",
+//             "Distance in x direction from inertial origin to mass center");
+// x.AddMember("y_mc", "m",
+//             "Distance in y direction from inertial origin to mass center");
+// x.AddMember("psi", "rad", "Heading measured from +x axis");
+// x.AddMember("v_x_mc", "m*s^-1",
+//             "Inertial velocity of mass center in body fixed x direction");
+// x.AddMember("v_y_mc", "m*s^-1",
+//             "Inertial velocity of mass center in body fixed y direction");
+// x.AddMember("r", "rad^-1", "Heading rate");
