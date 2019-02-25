@@ -33,8 +33,7 @@ const systems::OutputPort<T>& DynamicBicycleCar<T>::get_output_port() const {
 }
 
 template <typename T>
-const systems::InputPort<T>& DynamicBicycleCar<T>::get_input_port()
-    const {
+const systems::InputPort<T>& DynamicBicycleCar<T>::get_input_port() const {
   return systems::System<T>::get_input_port(0);
 }
 
@@ -107,10 +106,10 @@ T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
   DRAKE_ASSERT(mu >= 0.0);
   DRAKE_ASSERT(f_z >= 0.0);  // non-negative normal force acting on the tire.
 
-  using std::pow;
-  using std::tan;
   using std::abs;
   using std::atan2;
+  using std::pow;
+  using std::tan;
 
   const T f_y_non_saturated_tire =
       -c_alpha * tan(tire_slip_angle) +

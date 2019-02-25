@@ -377,6 +377,296 @@ TEST_F(DynamicBicycleCarTest, NegativeCurveTest) {
   TestCalcDerivatives(test_values);
 }
 
+using std::cerr;
+using std::endl;
+
+// Test fixture to help test the DynamicBicycle model.
+class DynamicBicycleCarSymbolicTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    test_car_ = std::make_unique<DynamicBicycleCar<symbolic::Expression>>();
+    test_car_params_ =
+        std::make_unique<DynamicBicycleCarParams<symbolic::Expression>>();
+    context_ = test_car_->CreateDefaultContext();
+    output_ = test_car_->AllocateOutput();
+    derivatives_ = test_car_->AllocateTimeDerivatives();
+    system_output_ = test_car_->AllocateOutput();
+  }
+
+  // Returns a pointer to the state vector.
+  DynamicBicycleCarState<symbolic::Expression>* continuous_state() {
+    DynamicBicycleCarState<symbolic::Expression>& state =
+        test_car_->get_mutable_state(context_.get());
+    return &state;
+  }
+
+  // Returns a pointer to the state derivatives vector.
+  const DynamicBicycleCarState<symbolic::Expression>* state_derivatives()
+      const {
+    const auto state_derivatives =
+        dynamic_cast<const DynamicBicycleCarState<symbolic::Expression>*>(
+            &derivatives_->get_mutable_vector());
+    return state_derivatives;
+  }
+
+  // Tests the slip angle of the front and rear tires based on the expected
+  // values contained in the input struct.
+  void TestTireSlipAngle(TestValues test_values) {
+    const symbolic::Expression tire_slip_angle_front = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<symbolic::Expression>::Tire::kFrontTire);
+    const symbolic::Expression tire_slip_angle_rear = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<symbolic::Expression>::Tire::kRearTire);
+
+    cerr << "tire_slip_angle_front: " << tire_slip_angle_front << endl;
+    cerr << "tire_slip_angle_rear : " << tire_slip_angle_rear << endl;
+
+    // EXPECT_NEAR(tire_slip_angle_front,
+    //             test_values.expected_tire_slip_angle_front,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(tire_slip_angle_rear,
+    // test_values.expected_tire_slip_angle_rear,
+    //             test_values.tolerance);
+  }
+
+  // Tests the normal forces on the front and rear tires based on the expected
+  // values contained in the input struct.
+  void TestNormalLoad(TestValues test_values) {
+    const symbolic::Expression normal_load_front =
+        test_car_->CalcNormalTireForce(
+            *test_car_params_, test_values.f_Cp_x,
+            DynamicBicycleCar<symbolic::Expression>::Tire::kFrontTire);
+    const symbolic::Expression normal_load_rear =
+        test_car_->CalcNormalTireForce(
+            *test_car_params_, test_values.f_Cp_x,
+            DynamicBicycleCar<symbolic::Expression>::Tire::kRearTire);
+
+    // EXPECT_NEAR(normal_load_front, test_values.expected_normal_load_front,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(normal_load_rear, test_values.expected_normal_load_rear,
+    //             test_values.tolerance);
+  }
+
+  // Tests the lateral tire forces on the front and rear tires based on the
+  // expected values contained in the input struct.
+  void TestLateralTireForce(TestValues test_values) {
+    // Compute the slip angles of the tires to be used in the lateral force
+    // calculation.
+    const symbolic::Expression tire_slip_angle_front = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<symbolic::Expression>::Tire::kFrontTire);
+    const symbolic::Expression tire_slip_angle_rear = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<symbolic::Expression>::Tire::kRearTire);
+
+    // Compute the normal forces on the tires to be used in the lateral force
+    // calculation.
+    const symbolic::Expression normal_load_front =
+        test_car_->CalcNormalTireForce(
+            *test_car_params_, test_values.f_Cp_x,
+            DynamicBicycleCar<symbolic::Expression>::Tire::kFrontTire);
+    const symbolic::Expression normal_load_rear =
+        test_car_->CalcNormalTireForce(
+            *test_car_params_, test_values.f_Cp_x,
+            DynamicBicycleCar<symbolic::Expression>::Tire::kRearTire);
+
+    // Compute the lateral forces on the tires and compare against expected
+    // values.
+    const symbolic::Expression lateral_force_front =
+        test_car_->CalcLateralTireForce(
+            tire_slip_angle_front, test_car_params_->c_alpha_f(),
+            normal_load_front, test_car_params_->mu());
+    const symbolic::Expression lateral_force_rear =
+        test_car_->CalcLateralTireForce(
+            tire_slip_angle_rear, test_car_params_->c_alpha_r(),
+            normal_load_rear, test_car_params_->mu());
+
+    // EXPECT_NEAR(lateral_force_front,
+    // test_values.expected_lateral_force_front,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(lateral_force_rear, test_values.expected_lateral_force_rear,
+    //             test_values.tolerance);
+  }
+
+  // Test the computation of the state derivatives based on the expected values
+  // contained in the input struct.
+  void TestCalcDerivatives(TestValues test_values) {
+    test_car_->CalcTimeDerivatives(*context_, derivatives_.get());
+
+    // EXPECT_NEAR(state_derivatives()->p_LoCp_x(),
+    // test_values.expected_v_LCp_x,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(state_derivatives()->p_LoCp_y(),
+    // test_values.expected_v_LCp_y,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(state_derivatives()->yaw_LC(), test_values.expected_yawDt_LC,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(state_derivatives()->v_LCp_x(),
+    // test_values.expected_vDt_LCp_x,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(state_derivatives()->v_LCp_y(),
+    // test_values.expected_vDt_LCp_y,
+    //             test_values.tolerance);
+    // EXPECT_NEAR(state_derivatives()->yawDt_LC(),
+    // test_values.expected_yawDDt_LC,
+    //             test_values.tolerance);
+  }
+
+  std::unique_ptr<DynamicBicycleCar<symbolic::Expression>>
+      test_car_;  // This is the model we are testing.
+  std::unique_ptr<DynamicBicycleCarParams<symbolic::Expression>>
+      test_car_params_;
+  std::unique_ptr<systems::Context<symbolic::Expression>> context_;
+  std::unique_ptr<systems::SystemOutput<symbolic::Expression>> output_;
+  std::unique_ptr<systems::ContinuousState<symbolic::Expression>> derivatives_;
+  std::unique_ptr<systems::SystemOutput<symbolic::Expression>> system_output_;
+};
+
+TEST_F(DynamicBicycleCarSymbolicTest, Construction) {
+  // Test that the system has one input port and one output port.
+  EXPECT_EQ(1, test_car_->get_num_input_ports());
+  EXPECT_EQ(1, test_car_->get_num_output_ports());
+
+  // Test if the input and output ports are vectors of Eigen scalars.
+  EXPECT_EQ(systems::kVectorValued,
+            test_car_->get_input_port().get_data_type());
+  EXPECT_EQ(systems::kVectorValued,
+            test_car_->get_output_port().get_data_type());
+}
+
+// Tests to make sure the inputs don't directly pass to the outputs.
+TEST_F(DynamicBicycleCarSymbolicTest, DirectFeedthrough) {
+  EXPECT_FALSE(test_car_->HasAnyDirectFeedthrough());
+}
+
+using symbolic::Variable;
+
+// Test that the state is passed through to the output.
+TEST_F(DynamicBicycleCarSymbolicTest, Output) {
+  // Set the system to have an arbitrary state.
+  Vector6<symbolic::Expression> test_state;
+  test_state << Variable("p_LoCp_x"), Variable("p_LoCp_y"), Variable("yaw_LC"),
+      Variable("v_LCp_x"), Variable("v_LCp_y"), Variable("yadDt_LC");
+  continuous_state()->SetFromVector(test_state);
+
+  test_car_->CalcOutput(*context_, system_output_.get());
+
+  const DynamicBicycleCarState<symbolic::Expression>* bike_out =
+      dynamic_cast<const DynamicBicycleCarState<symbolic::Expression>*>(
+          system_output_->get_vector_data(0));
+
+  EXPECT_NE(nullptr, bike_out);
+
+  std::cerr << "Bike Out = " << *bike_out << std::endl;
+
+  std::cerr << "CalcTimeDeriv?" << std::endl;
+
+  std::cerr << "CalcTimeDeriv?" << derivatives_.get()-><< std::endl;
+
+  test_car_->CalcTimeDerivatives(*context_, derivatives_.get());
+
+  std::cerr << "CalcTimeDeriv -- done" << std::endl;
+
+  const DynamicBicycleCarState<symbolic::Expression>* f = state_derivatives();
+
+  std::cerr << "is f nullptr? " << (f == nullptr) << std::endl;
+
+  ASSERT_NE(nullptr, f);
+
+  std::cerr << "is f nullptr? " << (f == nullptr) << std::endl;
+
+  std::cerr << f->p_LoCp_x() << std::endl;
+
+  // EXPECT_NEAR(state_derivatives()->p_LoCp_x(),
+  // test_values.expected_v_LCp_x,
+  //             test_values.tolerance);
+  // EXPECT_NEAR(state_derivatives()->p_LoCp_y(),
+  // test_values.expected_v_LCp_y,
+  //             test_values.tolerance);
+  // EXPECT_NEAR(state_derivatives()->yaw_LC(), test_values.expected_yawDt_LC,
+  //             test_values.tolerance);
+  // EXPECT_NEAR(state_derivatives()->v_LCp_x(),
+  // test_values.expected_vDt_LCp_x,
+  //             test_values.tolerance);
+  // EXPECT_NEAR(state_derivatives()->v_LCp_y(),
+  // test_values.expected_vDt_LCp_y,
+  //             test_values.tolerance);
+  // EXPECT_NEAR(state_derivatives()->yawDt_LC(),
+  // test_values.expected_yawDDt_LC,
+  //             test_values.tolerance);
+
+  // EXPECT_EQ(1.0, bike_out->p_LoCp_x());
+  // EXPECT_EQ(3.0, bike_out->p_LoCp_y());
+  // EXPECT_EQ(5.0, bike_out->yaw_LC());
+  // EXPECT_EQ(2.0, bike_out->v_LCp_x());
+  // EXPECT_EQ(4.0, bike_out->v_LCp_y());
+  // EXPECT_EQ(6.0, bike_out->yawDt_LC());
+}
+
+// // Test with constant velocity in a straight line.
+// TEST_F(DynamicBicycleCarSymbolicTest, StraightLineTest) {
+//   TestValues test_values = GetTestValuesStraightConstV();
+
+//   // Set the system to have an initial state with longitudinal velocity of
+//   // 10 m/s.
+//   continuous_state()->SetFromVector(Vector6<double>::Zero());
+//   continuous_state()->set_v_LCp_x(test_values.v_LCp_x);
+//   continuous_state()->set_yaw_LC(test_values.yaw_LC);
+
+//   // Sets the input port to be pi/6 radians (~30 degrees) steering angle and
+//   // zero force input.
+//   context_->FixInputPort(
+//       0, Vector2<double>{test_values.steer_angle, test_values.f_Cp_x});
+
+//   TestTireSlipAngle(test_values);
+//   TestNormalLoad(test_values);
+//   TestLateralTireForce(test_values);
+//   TestCalcDerivatives(test_values);
+// }
+
+// // Test on a curve with positive steering angle.
+// TEST_F(DynamicBicycleCarSymbolicTest, CurveTest) {
+//   TestValues test_values = GetParamsCurve();
+
+//   // Set the system to have an initial state with longitudinal velocity of
+//   // 10 m/s and a heading of pi/12 radians (~15 degrees).
+//   continuous_state()->SetFromVector(Vector6<double>::Zero());
+//   continuous_state()->set_v_LCp_x(test_values.v_LCp_x);
+//   continuous_state()->set_yaw_LC(test_values.yaw_LC);
+
+//   // Sets the input port to be pi/6 radians (~30 degrees) steering angle and
+//   // zero force input.
+//   context_->FixInputPort(
+//       0, Vector2<double>{test_values.steer_angle, test_values.f_Cp_x});
+
+//   TestTireSlipAngle(test_values);
+//   TestNormalLoad(test_values);
+//   TestLateralTireForce(test_values);
+//   TestCalcDerivatives(test_values);
+// }
+
+// // Test on a curve with negative steering angle.
+// TEST_F(DynamicBicycleCarSymbolicTest, NegativeCurveTest) {
+//   TestValues test_values = GetParamsCurveNegative();
+
+//   // Set the system to have an initial state with longitudinal velocity of
+//   // 10 m/s and a heading of pi/12 radians (~15 degrees).
+//   continuous_state()->SetFromVector(Vector6<double>::Zero());
+//   continuous_state()->set_v_LCp_x(test_values.v_LCp_x);
+//   continuous_state()->set_yaw_LC(test_values.yaw_LC);
+
+//   // Sets the input port to be -pi/6 radians (~30 degrees) steering angle and
+//   // zero force input.
+//   context_->FixInputPort(
+//       0, Vector2<double>{test_values.steer_angle, test_values.f_Cp_x});
+
+//   TestTireSlipAngle(test_values);
+//   TestNormalLoad(test_values);
+//   TestLateralTireForce(test_values);
+//   TestCalcDerivatives(test_values);
+// }
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake

@@ -1,0 +1,61 @@
+#pragma once
+#include <Eigen/Core>
+
+## for n in namespace
+namespace {{ n }} {
+## endfor
+
+using Real = {{ real_type }};
+
+## for item in vectors
+## for k, v in item
+
+/// {{ k }}Base
+using {{ k }}Base = Eigen::Matrix<
+    Real,
+    {{ length(v) }},
+    1,
+    Eigen::ColMajor | Eigen::AutoAlign>;
+
+/// {{ k }}
+class {{ k }}: public {{ k }}Base {
+public:
+  /// Default constructor
+  {{ k }}()
+      : {{ k }}Base() {}
+
+  /// Copy constructor
+  template <typename OtherDerived>
+  {{ k }}(const Eigen::MatrixBase<OtherDerived>& other)
+      : {{ k }}Base(other) {}
+
+  /// Copy assignment operator
+  template <typename OtherDerived>
+  {{ k }}& operator=(const Eigen::MatrixBase<OtherDerived>& other) {
+    this->{{ k }}Base::operator=(other);
+    return *this;
+  }
+
+  /// Indices to be used with operator[]
+  struct idx {
+## for vi in v
+    /// [{{ vi.units }}] {{ vi.doc_string }}
+    static constexpr size_t {{ vi.name }} = {{ loop.index }};
+## endfor
+  };
+
+## for vi in v
+  /// {{ vi.name }} getter
+  Real {{ vi.name }}() const { return (*this)(idx::{{ vi.name }}, 0); }
+
+  /// {{ vi.name }} setter
+  void {{ vi.name }}(Real val) { (*this)(idx::{{ vi.name }}, 0) = val; }
+## endfor
+  }
+};
+
+## endfor
+## endfor
+
+{% for n in namespace %}
+} // namespace {{ n }} {% endfor %}

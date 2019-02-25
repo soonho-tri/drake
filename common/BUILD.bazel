@@ -179,6 +179,8 @@ drake_cc_library(
         "symbolic.cc",
         "symbolic_codegen.cc",
         "symbolic_codegen.h",
+        "symbolic_codegen_util.cc",
+        "symbolic_codegen_util.h",
         "symbolic_environment.cc",
         "symbolic_environment.h",
         "symbolic_expression.cc",
@@ -218,6 +220,7 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         "//math:matrix_util",
+        "@inja",
     ],
 )
 
@@ -867,6 +870,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_codegen_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bicycle_model_codegen_example",
+    srcs = ["test/bicycle_model_codegen_example.cc"],
+    data = ["test/codegen.h.template"],
     deps = [
         ":essential",
         ":symbolic",
