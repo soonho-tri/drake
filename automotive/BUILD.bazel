@@ -742,6 +742,22 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "simpler_car_trajectory_optimization_test",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
+    # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
+    # builds (see #6223).
+    tags = ["snopt"],
+    deps = [
+        ":simpler_car",
+        "//common/proto:call_matlab",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
+        "//systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
 drake_py_unittest(
     name = "steering_command_driver_test",
     deps = [
