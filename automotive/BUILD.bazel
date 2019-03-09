@@ -51,6 +51,7 @@ drake_cc_package_library(
         ":road_path",
         ":simple_car",
         ":simple_powertrain",
+        ":simpler_car",
         ":trajectory",
         ":trajectory_car",
         ":trajectory_follower",
@@ -80,6 +81,9 @@ drake_cc_vector_gen_library(
         "mobil_planner_parameters.named_vector",
         "pure_pursuit_params.named_vector",
         "simple_car_params.named_vector",
+        "simpler_car_input.named_vector",
+        "simpler_car_state.named_vector",
+        "simpler_car_params.named_vector",
         "trajectory_car_params.named_vector",
     ] + _LCM_ENABLED_NAMED_VECTORS,
 )
@@ -342,6 +346,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "simpler_car",
+    srcs = ["simpler_car.cc"],
+    hdrs = [
+        "simpler_car.h",
+    ],
+    deps = [
+        ":calc_smooth_acceleration",
+        ":generated_vectors",
+        "//common:cond",
+        "//common:double",
+        "//common:symbolic",
+        "//math:saturate",
+        "//systems/framework:leaf_system",
+        "//systems/rendering:frame_velocity",
+        "//systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "calc_ongoing_road_position",
     srcs = ["calc_ongoing_road_position.cc"],
     hdrs = ["calc_ongoing_road_position.h"],
@@ -410,6 +433,7 @@ drake_cc_library(
         ":mobil_planner",
         ":pure_pursuit_controller",
         ":simple_car",
+        ":simpler_car",
         ":trajectory_car",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
@@ -572,6 +596,15 @@ drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//automotive:simple_car",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simpler_car_test",
+    deps = [
+        "//automotive:simpler_car",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework/test_utilities",
     ],
