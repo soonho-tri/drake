@@ -812,11 +812,14 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
 Expression DifferentiatePow(const Expression& f, const Expression& g,
                             const Variable& x) {
   if (is_constant(g)) {
-    // ABCDEFG
     const Expression& n{g};  // alias n = g
     // Special case where exponent is a constant:
     //     ∂/∂x pow(f, n) = n * pow(f, n - 1) * ∂/∂x f
-    return n * pow(f, n - 1) * f.Differentiate(x);
+    if (!is_zero(n)) {
+      return n * pow(f, n - 1) * f.Differentiate(x);
+    } else {
+      return n / f * f.Differentiate(x);
+    }
   }
   if (is_constant(f)) {
     const Expression& n{f};  // alias n = f

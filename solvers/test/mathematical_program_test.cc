@@ -3029,7 +3029,7 @@ GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
       MathematicalProgram::NonnegativePolynomial::kDsos);
 }
 
-GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
+GTEST_TEST(testMathematicalProgram, ZZZZZZZZZZz) {
   // from pydrake.all import MathematicalProgram, Jacobian, Evaluate
   // prog = MathematicalProgram()
   // x = prog.NewIndeterminates(2,'x')
@@ -3043,9 +3043,9 @@ GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
   auto x = prog.NewIndeterminates(2, "x");
   VectorX<Expression> f(2);
   f << -x[1], x[0] + x[1] * (x[0] * x[0] - 1);
-  auto V = x.dot(x);
+  auto V = x.cast<Expression>().dot(x);
   auto Vdot = V.Jacobian(x).dot(f);
-  std::cerr << Vdot << std::endl;
+  std::cerr << Jacobian(Vdot.Jacobian(x), x) << std::endl;
 }
 
 }  // namespace test
