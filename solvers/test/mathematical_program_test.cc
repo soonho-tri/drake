@@ -33,12 +33,12 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Dynamic;
-using Eigen::Ref;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
+using Eigen::Ref;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -609,17 +609,17 @@ GTEST_TEST(testGetSolution, testGetSolution1) {
   Eigen::Vector4d x4_value = -x3_value;
 
   Eigen::VectorXd x_val(prog.num_vars());
-  auto SetDecisionVariableValue = [&prog, &x_val](
-      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
-      const Eigen::Ref<const Eigen::MatrixXd>& val) {
-    for (int i = 0; i < variable.rows(); ++i) {
-      for (int j = 0; j < variable.cols(); ++j) {
-        const int variable_index =
-            prog.FindDecisionVariableIndex(variable(i, j));
-        x_val(variable_index) = val(i, j);
-      }
-    }
-  };
+  auto SetDecisionVariableValue =
+      [&prog, &x_val](const Eigen::Ref<const MatrixXDecisionVariable>& variable,
+                      const Eigen::Ref<const Eigen::MatrixXd>& val) {
+        for (int i = 0; i < variable.rows(); ++i) {
+          for (int j = 0; j < variable.cols(); ++j) {
+            const int variable_index =
+                prog.FindDecisionVariableIndex(variable(i, j));
+            x_val(variable_index) = val(i, j);
+          }
+        }
+      };
   SetDecisionVariableValue(X1, X1_value);
   SetDecisionVariableValue(X2, X2_value);
   SetDecisionVariableValue(x3, x3_value);
@@ -669,8 +669,8 @@ GTEST_TEST(testGetSolution, testGetSolution2) {
   // All decision variables in the expression are also decision
   // variables in the optimization program.
   EXPECT_EQ(e1, a_val.dot(x));
-  const symbolic::Polynomial p = symbolic::Polynomial(
-      e, symbolic::Variables(x));
+  const symbolic::Polynomial p =
+      symbolic::Polynomial(e, symbolic::Variables(x));
   const auto p1 = prog.SubstituteSolution(p);
 
   // All decision variables in the polynomial are also decision
@@ -1090,10 +1090,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
             binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
@@ -1200,8 +1198,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
   prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
   EXPECT_EQ(prog.linear_constraints().size(), 2);
   binding = prog.linear_constraints().back();
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                               Eigen::Vector2d(-1, 2)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
@@ -2182,11 +2179,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
   // The quadratic expression is actually affine.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
                runtime_error);
-  EXPECT_THROW(prog_.AddLorentzConeConstraint(
-                   2 * x_(0),
-                   x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
-                       x_(0) * x_(0) + 2 * x_(1) + 3),
-               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                         x_(0) * x_(0) + 2 * x_(1) + 3),
+      runtime_error);
 
   // The Hessian matrix is not positive semidefinite.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
@@ -2210,11 +2207,10 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
                runtime_error);
 
   // The quadratic expression is a negative constant.
-  EXPECT_THROW(
-      prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
-                                     pow(x_(0), 2) - pow(x_(1), 2) -
-                                         (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
-      runtime_error);
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
+                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+               runtime_error);
 
   // The first expression is not actually linear.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
@@ -2289,8 +2285,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
   EXPECT_EQ(binding.evaluator(),
             prog.rotated_lorentz_cone_constraints().back().evaluator());
   const VectorX<Expression> z =
-      binding.evaluator()->A() * binding.variables() +
-      binding.evaluator()->b();
+      binding.evaluator()->A() * binding.variables() + binding.evaluator()->b();
   const double tol{1E-10};
   EXPECT_TRUE(
       symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression1),
@@ -2317,9 +2312,8 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
             prog->positive_semidefinite_constraints().size());
   EXPECT_EQ(num_lin_eq_cnstr + 1, prog->linear_equality_constraints().size());
   // Check if the returned binding is the correct one.
-  EXPECT_EQ(
-      binding.evaluator().get(),
-      prog->positive_semidefinite_constraints().back().evaluator().get());
+  EXPECT_EQ(binding.evaluator().get(),
+            prog->positive_semidefinite_constraints().back().evaluator().get());
   // Check if the added linear constraint is correct. M is the newly added
   // variables representing the psd matrix.
   const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),
@@ -2791,12 +2785,11 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
   EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_cost, x_val),
                               Vector1d(7), 1E-15, MatrixCompareType::absolute));
 
-  EXPECT_TRUE(CompareMatrices(
-      prog.EvalBindings(prog.GetAllConstraints(), x_val),
-      Vector2d(30, 5), 1E-15, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      prog.EvalBindings(prog.GetAllCosts(), x_val),
-      Vector1d(7), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(prog.EvalBindings(prog.GetAllConstraints(), x_val),
+                      Vector2d(30, 5), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBindings(prog.GetAllCosts(), x_val),
+                              Vector1d(7), 1E-15, MatrixCompareType::absolute));
 
   // Pass in an incorrect size input.
   EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
@@ -2833,14 +2826,13 @@ GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
   prog.SetDecisionVariableValueInVector(x(2), 2, &guess);
   EXPECT_TRUE(std::isnan(guess[0]));
   EXPECT_EQ(guess[2], 2.0);
-  prog.SetDecisionVariableValueInVector(
-      x.head<2>(), Eigen::Vector2d(0.0, 1.0), &guess);
+  prog.SetDecisionVariableValueInVector(x.head<2>(), Eigen::Vector2d(0.0, 1.0),
+                                        &guess);
   EXPECT_EQ(guess[0], 0.0);
   EXPECT_EQ(guess[1], 1.0);
   EXPECT_EQ(guess[2], 2.0);
-  EXPECT_THROW(
-      prog.SetDecisionVariableValueInVector(y, 0.0, &guess),
-      std::exception);
+  EXPECT_THROW(prog.SetDecisionVariableValueInVector(y, 0.0, &guess),
+               std::exception);
 }
 
 GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
@@ -2848,16 +2840,16 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
 
-  prog.AddConstraint(x.transpose()*x == 1.);
+  prog.AddConstraint(x.transpose() * x == 1.);
 
   if (SnoptSolver().available()) {
     // Add equivalent constraints using all of the other entry points.
     // Note: restricted to SNOPT because IPOPT complains about the redundant
     // constraints.
-    prog.AddConstraint(x.transpose()*x >= 1.);
-    prog.AddConstraint(x.transpose()*x <= 1.);
-    prog.AddConstraint((x.transpose()*x)(0), 1., 1.);
-    prog.AddConstraint(x.transpose()*x, Vector1d{1.}, Vector1d{1.});
+    prog.AddConstraint(x.transpose() * x >= 1.);
+    prog.AddConstraint(x.transpose() * x <= 1.);
+    prog.AddConstraint((x.transpose() * x)(0), 1., 1.);
+    prog.AddConstraint(x.transpose() * x, Vector1d{1.}, Vector1d{1.});
   }
 
   prog.AddCost(x(0) + x(1));
@@ -2883,8 +2875,8 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   prog.SetSolverResult(solver_result);
   EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
   // The decision variables, optimal cost, and lower bound should all be NaN.
-  EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 
@@ -2906,8 +2898,8 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   prog.SetSolverResult(solver_result2);
   EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
   // The decision variables, optimal cost, and lower bound should all be NaN.
-  EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
@@ -3036,6 +3028,26 @@ GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
   CheckNewNonnegativePolynomial(
       MathematicalProgram::NonnegativePolynomial::kDsos);
 }
+
+GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
+  // from pydrake.all import MathematicalProgram, Jacobian, Evaluate
+  // prog = MathematicalProgram()
+  // x = prog.NewIndeterminates(2,'x')
+  // f = np.array([-x[1], x[0] + x[1]*(x[0]*x[0]-1)])
+  // V = x.dot(x)
+  // Vdot = V.Jacobian(x).dot(f).Expand()   # Previously, Vdot =
+  // V.Jacobian(x).dot(f) print Evaluate(Jacobian(Vdot.Jacobian(x), x),
+  // dict(zip(x,[0,0])))
+
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(2, "x");
+  VectorX<Expression> f(2);
+  f << -x[1], x[0] + x[1] * (x[0] * x[0] - 1);
+  auto V = x.dot(x);
+  auto Vdot = V.Jacobian(x).dot(f);
+  std::cerr << Vdot << std::endl;
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

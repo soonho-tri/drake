@@ -25,6 +25,8 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+    "-Wno-return-std-move",
+    "-Wno-self-assign-overloaded",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when

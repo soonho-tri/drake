@@ -2647,6 +2647,8 @@ TEST_F(SymbolicExpressionTest, EvaluateExpressionsIncludingRandomVariables) {
   }
 }
 
+TEST_F(SymbolicExpressionTest, ZZZZZZZZZZZZ) {}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
