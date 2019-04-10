@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":default_scalars",
         ":double",
         ":drake_bool",
+        ":drake_interval",
         ":drake_path",
         ":dummy_value",
         ":essential",
@@ -48,6 +49,7 @@ drake_cc_package_library(
         ":sorted_vectors_have_intersection",
         ":symbolic",
         ":symbolic_decompose",
+        ":symbolic_interval_evaluation",
         ":temp_directory",
         ":type_safe_index",
         ":unused",
@@ -118,6 +120,15 @@ drake_cc_library(
     name = "double",
     srcs = ["double_overloads.cc"],
     hdrs = ["double_overloads.h"],
+)
+
+drake_cc_library(
+    name = "drake_interval",
+    # srcs = [".cc"],
+    hdrs = ["drake_interval.h"],
+    deps = [
+        "@dreal",
+    ],
 )
 
 drake_cc_library(
@@ -238,6 +249,20 @@ drake_cc_library(
         "symbolic_decompose.h",
     ],
     deps = [
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_interval_evaluation",
+    srcs = [
+        "symbolic_interval_evaluation.cc",
+    ],
+    hdrs = [
+        "symbolic_interval_evaluation.h",
+    ],
+    deps = [
+        ":drake_interval",
         ":symbolic",
     ],
 )
@@ -1014,6 +1039,15 @@ drake_cc_googletest(
         ":symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_interval_evaluation_test",
+    deps = [
+        ":essential",
+        ":symbolic_interval_evaluation",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
