@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 using std::function;
@@ -299,6 +300,16 @@ TEST_F(SymbolicExpansionTest, DivideByConstant) {
   // Note that we do not cancel x out since it can be zero.
   EXPECT_PRED2(ExprEqual, (36 * x_ * y_ / x_ / -3).Expand(),
                -12 * x_ * y_ / x_);
+}
+
+TEST_F(SymbolicExpansionTest, NOOP) {
+  const Expression e{(x_ + y_) * (x_ + y_)};
+  const Expression e_expanded{e.Expand()};
+
+  {
+    ::drake::test::LimitMalloc guard;
+    const Expression e_doubl_expanded = e_expanded.Expand();
+  }
 }
 
 }  // namespace
