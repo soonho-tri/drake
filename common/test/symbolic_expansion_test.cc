@@ -302,10 +302,9 @@ TEST_F(SymbolicExpansionTest, DivideByConstant) {
                -12 * x_ * y_ / x_);
 }
 
-TEST_F(SymbolicExpansionTest, NOOP) {
+TEST_F(SymbolicExpansionTest, DoubleExpandShouldBeNoop) {
   const Expression e{(x_ + y_) * (x_ + y_)};
   const Expression e_expanded{e.Expand()};
-
   {
     ::drake::test::LimitMalloc guard;
     const Expression e_doubl_expanded = e_expanded.Expand();
