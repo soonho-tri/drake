@@ -104,10 +104,10 @@ class Polynomial {
   Polynomial(const Expression& e, const Variables& indeterminates);
 
   /// Returns the indeterminates of this polynomial.
-  Variables indeterminates() const;
+  const Variables& indeterminates() const;
 
   /// Returns the decision variables of this polynomial.
-  Variables decision_variables() const;
+  const Variables& decision_variables() const;
 
   /// Returns the highest degree of this polynomial in a variable @p v.
   int Degree(const Variable& v) const;
@@ -217,6 +217,8 @@ class Polynomial {
   // decision_variables() and indeterminates().
   void CheckInvariant() const;
   MapType monomial_to_coefficient_map_;
+  Variables indeterminates_;
+  Variables decision_variables_;
 };
 
 /// Unary minus operation for polynomial.
