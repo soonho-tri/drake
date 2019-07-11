@@ -243,9 +243,30 @@ string Expression::to_string() const {
   return oss.str();
 }
 
-Expression operator+(Expression lhs, const Expression& rhs) {
-  lhs += rhs;
-  return lhs;
+Expression operator+(const Expression& lhs, const Expression& rhs) {
+  Expression lhs_copy{lhs};
+  return lhs_copy += rhs;
+}
+
+Expression operator+(const Expression& lhs, Expression&& rhs) {
+  return rhs += lhs;
+}
+
+Expression operator+(Expression&& lhs, const Expression& rhs) {
+  return lhs += rhs;
+}
+
+Expression operator+(Expression&& lhs, Expression&& rhs) {
+  if (is_addition(lhs) && is_addition(rhs)) {
+    if (to_addition(rhs)->get_expr_to_coeff_map().size() >
+        to_addition(lhs)->get_expr_to_coeff_map().size()) {
+      return rhs += lhs;
+    }
+  }
+  if (is_addition(rhs)) {
+    return rhs += lhs;
+  }
+  return lhs += rhs;
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -264,30 +285,38 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
     lhs = get_constant_value(lhs) + get_constant_value(rhs);
     return lhs;
   }
+
   // Simplification: flattening. To build a new expression, we use
   // ExpressionAddFactory which holds intermediate terms and does
   // simplifications internally.
-  ExpressionAddFactory add_factory{};
   if (is_addition(lhs)) {
     // 1. (e_1 + ... + e_n) + rhs
-    add_factory = to_addition(lhs);
-    // Note: AddExpression method takes care of the special case where `rhs` is
-    // of ExpressionAdd.
-    add_factory.AddExpression(rhs);
-  } else {
-    if (is_addition(rhs)) {
-      // 2. lhs + (e_1 + ... + e_n)
-      add_factory = to_addition(rhs);
-      add_factory.AddExpression(lhs);
+    if (lhs.ptr_->use_count() == 1) {
+      return lhs =
+                 ExpressionAddFactory{
+                     get_constant_in_addition(lhs),
+                     std::move(
+                         to_addition(lhs)->get_mutable_expr_to_coeff_map())}
+                     .AddExpression(rhs)
+                     .GetExpression();
     } else {
-      // nothing to flatten: return lhs + rhs
-      add_factory.AddExpression(lhs);
-      add_factory.AddExpression(rhs);
+      return lhs = ExpressionAddFactory{to_addition(lhs)}
+                       .AddExpression(rhs)
+                       .GetExpression();
     }
   }
-  // Extract an expression from factory
-  lhs = add_factory.GetExpression();
-  return lhs;
+  if (is_addition(rhs)) {
+    // 2. lhs + (e_1 + ... + e_n)
+    return lhs = ExpressionAddFactory{to_addition(rhs)}
+                     .AddExpression(lhs)
+                     .GetExpression();
+  } else {
+    // nothing to flatten: return lhs + rhs
+    return lhs = ExpressionAddFactory{}
+                     .AddExpression(lhs)
+                     .AddExpression(rhs)
+                     .GetExpression();
+  }
 }
 
 Expression& Expression::operator++() {

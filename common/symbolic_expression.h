@@ -341,7 +341,11 @@ class Expression {
     item.HashAppend(&delegating_hasher);
   }
 
-  friend Expression operator+(Expression lhs, const Expression& rhs);
+  friend Expression operator+(const Expression& lhs, const Expression& rhs);
+  friend Expression operator+(Expression&& lhs, const Expression& rhs);
+  friend Expression operator+(const Expression& lhs, Expression&& rhs);
+  friend Expression operator+(Expression&& lhs, Expression&& rhs);
+
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend Expression& operator+=(Expression& lhs, const Expression& rhs);
 
@@ -557,7 +561,11 @@ class Expression {
   Expression& set_expanded();
 };
 
-Expression operator+(Expression lhs, const Expression& rhs);
+Expression operator+(const Expression& lhs, const Expression& rhs);
+Expression operator+(Expression&& lhs, const Expression& rhs);
+Expression operator+(const Expression& lhs, Expression&& rhs);
+Expression operator+(Expression&& lhs, Expression&& rhs);
+
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs);
 Expression operator+(const Expression& e);
