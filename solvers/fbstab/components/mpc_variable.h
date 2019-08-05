@@ -13,7 +13,7 @@ namespace fbstab {
 
 // Forward declaration of testing class to enable a friend declaration.
 namespace test {
-class MPCComponentUnitTests;
+class MpcComponentUnitTests;
 }  // namespace test
 
 /**
@@ -156,8 +156,8 @@ class MpcVariable {
   // Getter for data_ with a nullptr check.
   const MpcData* data() const;
 
-  friend class MPCResidual;
-  friend class MPCFeasibility;
+  friend class MpcResidual;
+  friend class MpcFeasibility;
   friend class RicattiLinearSolver;
   friend class FBstabMPC;
 };
