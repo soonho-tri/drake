@@ -48,7 +48,7 @@ class MpcFeasibility {
    * Retrieve the result of the last infeasibility check.
    * @return false if a dual infeasibility certificate was found, true otherwise
    */
-  bool IsDualFeasible() const { return dual_feasible_; };
+  bool IsDualFeasible() const { return dual_feasible_; }
 
   /**
    * Retrieve the result of the last infeasibility check.
@@ -73,8 +73,6 @@ class MpcFeasibility {
   int nz_ = 0;  // number of primal variables
   int nl_ = 0;  // number of equality duals
   int nv_ = 0;  // number of inequality duals
-
-  double max(double a, double b) { return (a > b) ? a : b; }
 };
 
 }  // namespace fbstab

@@ -1,5 +1,6 @@
 #include "drake/solvers/fbstab/components/mpc_feasibility.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <Eigen/Dense>
@@ -81,8 +82,8 @@ void MpcFeasibility::ComputeFeasibility(const MpcVariable& x, double tol) {
   data->axpyh(1.0, &tl_);
   const double p2 = tl_.dot(x.l()) + tv_.dot(x.v());
 
-  const double u =
-      max(x.v().lpNorm<Eigen::Infinity>(), x.l().lpNorm<Eigen::Infinity>());
+  const double u = std::max(x.v().lpNorm<Eigen::Infinity>(),
+                            x.l().lpNorm<Eigen::Infinity>());
   if ((p1 <= tol * u) && (p2 < 0)) {
     primal_feasible_ = false;
   } else {

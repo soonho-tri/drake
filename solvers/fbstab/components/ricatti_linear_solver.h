@@ -65,7 +65,7 @@ class RicattiLinearSolver {
    * in https://arxiv.org/pdf/1901.04046.pdf.
    * @param[in] alpha
    */
-  void SetAlpha(double alpha) { alpha_ = alpha; };
+  void SetAlpha(double alpha) { alpha_ = alpha; }
 
   /**
    * Factors the matrix V(x,xbar,sigma) using a Ricatti
