@@ -200,7 +200,7 @@ class MpcData {
 
   friend class test::MpcComponentUnitTests;
   friend class RicattiLinearSolver;
-  friend class FBstabMPC;
+  friend class FBstabMpc;
 };
 
 }  // namespace fbstab
