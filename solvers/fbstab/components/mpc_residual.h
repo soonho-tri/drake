@@ -26,7 +26,7 @@ class MpcComponentUnitTests;
  */
 class MpcResidual {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcResidual);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcResidual)
   /**
    * Allocates memory for the residual.
    *
@@ -81,7 +81,7 @@ class MpcResidual {
    * @param[in] xbar   Outer loop variable
    * @param[in] sigma  Regularization strength > 0
    *
-   * Throws a runtime_error if problem data isn't linked, sigma isn't positive,
+   * Throws a runtime_error if sigma isn't positive,
    * or if x and xbar aren't the same size.
    */
   void InnerResidual(const MpcVariable& x, const MpcVariable& xbar,
@@ -94,8 +94,6 @@ class MpcResidual {
    * for a mathematical definition.
    *
    * @param[in] x Evaluation point.
-   *
-   * Throws a runtime_error if problem data isn't linked.
    */
   void NaturalResidual(const MpcVariable& x);
 
@@ -106,8 +104,6 @@ class MpcResidual {
    * and stores the result internally.
    *
    * @param[in] x Evaluation point.
-   *
-   * Throws a runtime_error if problem data isn't linked.
    */
   void PenalizedNaturalResidual(const MpcVariable& x);
 
@@ -152,7 +148,7 @@ class MpcResidual {
   double lnorm_ = 0.0;  // cached norm of l_
   double vnorm_ = 0.0;  // cached norm of v_
 
-  /**
+  /*
    * Computes the penalized Fischer-Burmeister function pfb(a,b)
    * Equation (19) of https://arxiv.org/pdf/1901.04046.pdf.
    * @param[in]  a

@@ -34,7 +34,7 @@ class MpcComponentUnitTests;
  */
 class MpcVariable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcVariable);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcVariable)
   /**
    * Allocates memory for a primal-dual variable.
    *

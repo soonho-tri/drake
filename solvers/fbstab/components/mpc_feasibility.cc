@@ -13,6 +13,10 @@ namespace solvers {
 namespace fbstab {
 
 MpcFeasibility::MpcFeasibility(int N, int nx, int nu, int nc) {
+  if (N <= 0 || nx <= 0 || nu <= 0 || nc <= 0) {
+    throw std::runtime_error(
+        "All size inputs to MpcFeasibility::MpcFeasibility must be >= 1.");
+  }
   nx_ = nx;
   nu_ = nu;
   nc_ = nc;
@@ -34,10 +38,6 @@ void MpcFeasibility::ComputeFeasibility(const MpcVariable& x, double tol) {
         "In MpcFeasibility::ComputeFeasibility: size mismatch between *this "
         "and x.");
   }
-
-  primal_feasible_ = true;
-  dual_feasible_ = true;
-
   // The conditions for dual-infeasibility are:
   // max(Az) <= 0 and f'*z < 0 and |Hz| <= tol * |z| and |Gz| <= tol*|z|
 

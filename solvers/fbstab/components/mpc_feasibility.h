@@ -20,7 +20,7 @@ namespace fbstab {
  */
 class MpcFeasibility {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcFeasibility);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcFeasibility)
   /**
    * Allocates workspace memory.
    *
@@ -45,13 +45,13 @@ class MpcFeasibility {
   void ComputeFeasibility(const MpcVariable& x, double tol);
 
   /**
-   * Retrieve the result of the last infeasibility check.
+   * Retrieves the result of the last infeasibility check.
    * @return false if a dual infeasibility certificate was found, true otherwise
    */
   bool IsDualFeasible() const { return dual_feasible_; }
 
   /**
-   * Retrieve the result of the last infeasibility check.
+   * Retrieves the result of the last infeasibility check.
    * @return false if a primal infeasibility certificate was found, true
    * otherwise
    */

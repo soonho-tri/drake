@@ -43,7 +43,7 @@ class MpcComponentUnitTests;
  */
 class MpcData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData)
   /**
    * Creates problem data and performs input validation. Throws
    * a runtime_error if the problem data aren't consistently sized.

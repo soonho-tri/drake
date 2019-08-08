@@ -18,7 +18,6 @@ MpcResidual::MpcResidual(int N, int nx, int nu, int nc) {
     throw std::runtime_error(
         "All inputs to MpcResidual::MpcResidual must be >= 1.");
   }
-
   N_ = N;
   nx_ = nx;
   nu_ = nu;
@@ -31,9 +30,7 @@ MpcResidual::MpcResidual(int N, int nx, int nu, int nc) {
   l_.resize(nl_);
   v_.resize(nv_);
 
-  z_.setConstant(0.0);
-  l_.setConstant(0.0);
-  v_.setConstant(0.0);
+  Fill(0.0);
 }
 
 void MpcResidual::Fill(double a) {

@@ -23,15 +23,17 @@ class MpcComponentUnitTests;
  * equations that arise when solving MPC form QPs (see mpc_data.h) using FBstab.
  * The equations are of the form
  *
- * [Hs  G' A'][dz] = [rz]
- * [-G  sI 0 ][dl] = [rl]
- * [-CA 0  D ][dv] = [rv]
+ *     [Hs  G' A'][dz] = [rz]
+ *     [-G  sI 0 ][dl] = [rl]
+ *     [-CA 0  D ][dv] = [rv]
  *
  * where s = sigma, C = diag(gamma), D = diag(mu + sigma*gamma).
  * The vectors gamma and mu are defined in (24) of
  * https://arxiv.org/pdf/1901.04046.pdf.
  *
- * In compact form: V(x,xbar,sigma)*dx = r.
+ * In compact form:
+ *
+ *     V(x,xbar,sigma)*dx = r.
  *
  * The Ricatti recursion used by this class is based on the one in:
  *
@@ -68,7 +70,7 @@ class RicattiLinearSolver {
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
   /**
-   * Factors the matrix V(x,xbar,sigma) using a Ricatti
+   * Computes then factors the matrix V(x,xbar,sigma) using a Ricatti
    * recursion.
    *
    * The matrix V is computed as described in
