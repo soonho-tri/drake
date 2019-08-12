@@ -17,10 +17,10 @@ namespace fbstab {
 using VectorXd = Eigen::VectorXd;
 using MatrixXd = Eigen::MatrixXd;
 
-RicattiLinearSolver::RicattiLinearSolver(int N, int nx, int nu, int nc) {
+RiccatiLinearSolver::RiccatiLinearSolver(int N, int nx, int nu, int nc) {
   if (N <= 0 || nx <= 0 || nu <= 0 || nc <= 0) {
     throw std::runtime_error(
-        "In RicattiLinearSolver::RicattiLinearSolver: all inputs must be "
+        "In RiccatiLinearSolver::RiccatiLinearSolver: all inputs must be "
         "positive.");
   }
   N_ = N;
@@ -77,22 +77,22 @@ RicattiLinearSolver::RicattiLinearSolver(int N, int nx, int nu, int nc) {
   r3_.resize(nv_);
 }
 
-bool RicattiLinearSolver::Initialize(const MpcVariable& x,
+bool RiccatiLinearSolver::Initialize(const MpcVariable& x,
                                      const MpcVariable& xbar, double sigma) {
   const MpcData* const data = x.data();
   if (xbar.data_ != data) {
     throw std::runtime_error(
-        "In RicattiLinearSolver::Initialize: x and xbar have mismatched "
+        "In RiccatiLinearSolver::Initialize: x and xbar have mismatched "
         "problem data.");
   }
   if (!MpcVariable::SameSize(x, xbar)) {
     throw std::runtime_error(
-        "In RicattiLinearSolver::Initialize: x and xbar are not the same "
+        "In RiccatiLinearSolver::Initialize: x and xbar are not the same "
         "size.");
   }
   if (sigma <= 0) {
     throw std::runtime_error(
-        "In RicattiLinearSolver::Initialize: sigma must be positive.");
+        "In RiccatiLinearSolver::Initialize: sigma must be positive.");
   }
 
   Eigen::Vector2d temp;
@@ -128,7 +128,7 @@ bool RicattiLinearSolver::Initialize(const MpcVariable& x,
     S_[i].noalias() += Li.transpose() * Etemp_;
   }
 
-  // Begin the matrix potion of the Ricatti recursion.
+  // Begin the matrix potion of the Riccati recursion.
   // Base case: L(0) = chol(sigma*I).
   L_[0] = sqrt(sigma) * MatrixXd::Identity(nx_, nx_);
 
@@ -213,11 +213,11 @@ bool RicattiLinearSolver::Initialize(const MpcVariable& x,
   return true;
 }
 
-bool RicattiLinearSolver::Solve(const MpcResidual& r, MpcVariable* dx) const {
+bool RiccatiLinearSolver::Solve(const MpcResidual& r, MpcVariable* dx) const {
   const MpcData* const data = dx->data();
   if (r.nz_ != dx->nz_ || r.nl_ != dx->nl_ || r.nv_ != dx->nv_) {
     throw std::runtime_error(
-        "In RicattiLinearSolver::Solve: r and dx size mismatch.");
+        "In RiccatiLinearSolver::Solve: r and dx size mismatch.");
   }
   // Compute the post-elimination residual,
   // r1 = rz - A'*(rv./mus) and r2 = -rl.
@@ -229,7 +229,7 @@ bool RicattiLinearSolver::Solve(const MpcResidual& r, MpcVariable* dx) const {
   Eigen::Map<MatrixXd> r1(r1_.data(), nx_ + nu_, N_ + 1);
   Eigen::Map<MatrixXd> r2(r2_.data(), nx_, N_ + 1);
 
-  // Begin the vector portion of the Ricatti recursion.
+  // Begin the vector portion of the Riccati recursion.
   // Base case: theta(0) = -rl(0), h(0) = inv(L*L')*theta(0) - rx(0).
   th_[0] = r2.col(0);
   h_[0] = th_[0];
@@ -345,7 +345,7 @@ bool RicattiLinearSolver::Solve(const MpcResidual& r, MpcVariable* dx) const {
   return true;
 }
 
-Eigen::Vector2d RicattiLinearSolver::PFBGradient(double a, double b) const {
+Eigen::Vector2d RiccatiLinearSolver::PFBGradient(double a, double b) const {
   const double r = sqrt(a * a + b * b);
   const double d = 1.0 / sqrt(2.0);
 

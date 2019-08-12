@@ -158,7 +158,7 @@ class MpcResidual {
    */
   double pfb(double a, double b, double alpha);
 
-  friend class RicattiLinearSolver;
+  friend class RiccatiLinearSolver;
 };
 
 }  // namespace fbstab

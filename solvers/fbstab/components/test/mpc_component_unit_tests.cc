@@ -67,9 +67,9 @@ GTEST_TEST(MPCFeasibility, SanityCheck) {
   test.FeasibilitySanityCheck();
 }
 
-GTEST_TEST(MPCLinearSolver, RicattiRecursion) {
+GTEST_TEST(MPCLinearSolver, RiccatiRecursion) {
   MpcComponentUnitTests test;
-  test.RicattiRecursion();
+  test.RiccatiRecursion();
 }
 
 }  // namespace test

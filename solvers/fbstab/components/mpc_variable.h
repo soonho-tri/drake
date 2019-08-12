@@ -158,7 +158,7 @@ class MpcVariable {
 
   friend class MpcResidual;
   friend class MpcFeasibility;
-  friend class RicattiLinearSolver;
+  friend class RiccatiLinearSolver;
   friend class FBstabMpc;
 };
 

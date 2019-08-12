@@ -26,7 +26,7 @@ using VectorXd = Eigen::VectorXd;
  * MpcVariable
  * MPCResidual
  * MPCFeasibiity
- * RicattiLinearSolver
+ * RiccatiLinearSolver
  */
 class MpcComponentUnitTests {
  public:
@@ -375,7 +375,7 @@ class MpcComponentUnitTests {
   }
 
   // Checks that the output of the
-  // Ricatti recursion solver dx solves the system
+  // Riccati recursion solver dx solves the system
   //
   // [Hs  G' A'][dz] = [rz]
   // [-G  sI 0 ][dl] = [rl]
@@ -385,7 +385,7 @@ class MpcComponentUnitTests {
   //
   // See (28) in https://arxiv.org/pdf/1901.04046.pdf
   // for more details.
-  void RicattiRecursion() {
+  void RiccatiRecursion() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
 
     MpcVariable x(data.N_, data.nx_, data.nu_, data.nc_);
@@ -406,7 +406,7 @@ class MpcComponentUnitTests {
 
     double sigma = 1.0;
 
-    RicattiLinearSolver ls(data.N_, data.nx_, data.nu_, data.nc_);
+    RiccatiLinearSolver ls(data.N_, data.nx_, data.nu_, data.nc_);
     ls.Initialize(x, y, sigma);
 
     // Create the residual then solve.

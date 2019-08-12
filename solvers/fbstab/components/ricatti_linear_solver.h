@@ -19,7 +19,7 @@ class MpcComponentUnitTests;
 }  // namespace test
 
 /**
- * Implements a Ricatti recursion based method for solving linear systems of
+ * Implements a Riccati recursion based method for solving linear systems of
  * equations that arise when solving MPC form QPs (see mpc_data.h) using FBstab.
  * The equations are of the form
  *
@@ -35,7 +35,7 @@ class MpcComponentUnitTests;
  *
  *     V(x,xbar,sigma)*dx = r.
  *
- * The Ricatti recursion used by this class is based on the one in:
+ * The Riccati recursion used by this class is based on the one in:
  *
  * Rao, Christopher V., Stephen J. Wright, and James B. Rawlings.
  * "Application of interior-point methods to model predictive control."
@@ -45,11 +45,13 @@ class MpcComponentUnitTests;
  * contains workspace memory and methods for setting up and solving the linear
  * systems.
  *
- * Note that this class contains mutable members as is thus not thread safe.
+ * There is an error on page 744 of the paper in the \Delta x_k equation, It's
+ * missing a residual term. This class contains mutable members as is thus not
+ * thread safe.
  */
-class RicattiLinearSolver {
+class RiccatiLinearSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RicattiLinearSolver);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RiccatiLinearSolver);
   /**
    * Allocates workspace memory.
    *
@@ -60,7 +62,7 @@ class RicattiLinearSolver {
    *
    * Throws a runtime_error if any of the inputs are non-positive.
    */
-  RicattiLinearSolver(int N, int nx, int nu, int nc);
+  RiccatiLinearSolver(int N, int nx, int nu, int nc);
 
   /**
    * Sets a parameter used in the algorithm, see (19)
@@ -70,7 +72,7 @@ class RicattiLinearSolver {
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
   /**
-   * Computes then factors the matrix V(x,xbar,sigma) using a Ricatti
+   * Computes then factors the matrix V(x,xbar,sigma) using a Riccati
    * recursion.
    *
    * The matrix V is computed as described in

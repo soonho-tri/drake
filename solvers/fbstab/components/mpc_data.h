@@ -199,7 +199,7 @@ class MpcData {
   void validate_size() const;
 
   friend class test::MpcComponentUnitTests;
-  friend class RicattiLinearSolver;
+  friend class RiccatiLinearSolver;
   friend class FBstabMpc;
 };
 
