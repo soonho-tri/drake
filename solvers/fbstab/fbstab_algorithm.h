@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace solvers {
@@ -25,6 +26,8 @@ enum class ExitFlag {
   PRIMAL_DUAL_INFEASIBLE = 5
 };
 
+using clock = std::chrono::high_resolution_clock;
+
 /**
  * Packages the exit flag, overall residual, solve time,
  * and iteration counts.
@@ -34,7 +37,7 @@ struct SolverOut {
   double residual = 0.0;
   int newton_iters = 0;
   int prox_iters = 0;
-  double solve_time = 0.0;  /// CPU time in s.
+  clock::duration solve_time{0};  /// CPU time in clock duration.
 };
 
 /**
@@ -215,8 +218,7 @@ class FBstabAlgorithm {
   void set_display_level(Display v) { display_level_ = v; }
 
  private:
-  using time_instant =
-      std::chrono::time_point<std::chrono::high_resolution_clock>;
+  using time_point = clock::time_point;
   // Codes for infeasibility detection.
   enum class InfeasibilityStatus {
     FEASIBLE = 0,
@@ -310,26 +312,19 @@ class FBstabAlgorithm {
    * @param[in] start time instant when the solve call started
    */
   SolverOut PrepareOutput(ExitFlag e, int prox_iters, int newton_iters,
-                          const Residual& r, time_instant start) const {
-    struct SolverOut output = {
-        ExitFlag::MAXITERATIONS,  // exit flag
-        0.0,                      // residual
-        0,                        // prox iters
-        0,                        // newton iters
-        -1.0 / 1000.0,            // solve time
-    };
-
-    if (record_solve_time_) {
-      time_instant now = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> elapsed = now - start;
-      output.solve_time = elapsed.count();
-    }
+                          const Residual& r, const time_point& start) const {
+    struct SolverOut output;
     output.eflag = e;
     output.residual = r.Norm();
     output.newton_iters = newton_iters;
     output.prox_iters = prox_iters;
     // Printing is in ms.
-    PrintFinal(prox_iters, newton_iters, e, r, 1000.0 * output.solve_time);
+    if (record_solve_time_) {
+      output.solve_time = clock::now() - start;
+      PrintFinal(prox_iters, newton_iters, e, r, output.solve_time);
+    } else {
+      PrintFinal(prox_iters, newton_iters, e, r, nullopt);
+    }
     return output;
   }
 
@@ -433,7 +428,7 @@ class FBstabAlgorithm {
   }
   // Prints a summary to stdout depending on display settings.
   void PrintFinal(int prox_iters, int newton_iters, ExitFlag eflag,
-                  const Residual& r, double t) const {
+                  const Residual& r, const optional<clock::duration>& t) const {
     if (display_level_ >= Display::FINAL) {
       printf("\nOptimization completed!  Exit code:");
       switch (eflag) {
@@ -458,7 +453,11 @@ class FBstabAlgorithm {
         default:
           DRAKE_UNREACHABLE();
       }
-      printf("Time elapsed: %f ms (-1.0 indicates timing disabled)\n", t);
+      if (t) {
+        printf(
+            "Time elapsed: %lld ms\n",
+            std::chrono::duration_cast<std::chrono::milliseconds>(*t).count());
+      }
       printf("Proximal iterations: %d out of %d\n", prox_iters,
              max_prox_iters_);
       printf("Newton iterations: %d out of %d\n", newton_iters,
@@ -478,10 +477,8 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
                           Feasibility>::Solve(const Data* qp_data,
                                               Variable* x0) {
-  time_instant start_time;
-  if (record_solve_time_) {
-    start_time = std::chrono::high_resolution_clock::now();
-  }
+  const time_point start_time{record_solve_time_ ? clock::now()
+                                                 : time_point{} /* dummy */};
 
   // Make sure the linear solver and residuals objects are using the same value
   // for the alpha parameter.
