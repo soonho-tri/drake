@@ -2711,6 +2711,11 @@ class MathematicalProgram {
     return decision_variable_index_;
   }
 
+  const std::unordered_map<symbolic::Variable::Id, int>& indeterminates_index()
+      const {
+    return indeterminates_index_;
+  }
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
