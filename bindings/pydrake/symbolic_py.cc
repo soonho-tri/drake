@@ -110,7 +110,7 @@ PYBIND11_MODULE(symbolic, m) {
       // We add `EqualTo` instead of `equal_to` to maintain consistency among
       // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
       // side. This enables us to achieve polymorphism via ducktyping in Python.
-      .def("EqualTo", &Variable::equal_to, var_doc.equal_to.doc)
+      .def("EqualTo", &Variable::equal_to, py::arg("var"), var_doc.equal_to.doc)
       // Unary Plus.
       .def(+py::self)
       // Unary Minus.
@@ -147,7 +147,7 @@ PYBIND11_MODULE(symbolic, m) {
   py::class_<Variables>(m, "Variables", doc.Variables.doc)
       .def(py::init<>(), doc.Variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
-          doc.Variables.ctor.doc_1args_vec)
+          py::arg("vec"), doc.Variables.ctor.doc_1args_vec)
       .def("size", &Variables::size, doc.Variables.size.doc)
       .def("__len__", &Variables::size, doc.Variables.size.doc)
       .def("empty", &Variables::empty)
@@ -161,32 +161,37 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Variables& self) { return std::hash<Variables>{}(self); })
       .def("insert",
           [](Variables& self, const Variable& var) { self.insert(var); },
-          doc.Variables.insert.doc_1args_var)
+          py::arg("var"), doc.Variables.insert.doc_1args_var)
       .def("insert",
           [](Variables& self, const Variables& vars) { self.insert(vars); },
-          doc.Variables.insert.doc_1args_vars)
+          py::arg("vars"), doc.Variables.insert.doc_1args_vars)
       .def("erase",
           [](Variables& self, const Variable& key) { return self.erase(key); },
-          doc.Variables.erase.doc_1args_key)
+          py::arg("key"), doc.Variables.erase.doc_1args_key)
       .def("erase",
           [](Variables& self, const Variables& vars) {
             return self.erase(vars);
           },
-          doc.Variables.erase.doc_1args_vars)
-      .def("include", &Variables::include, doc.Variables.include.doc)
-      .def("__contains__", &Variables::include)
-      .def("IsSubsetOf", &Variables::IsSubsetOf, doc.Variables.IsSubsetOf.doc)
-      .def("IsSupersetOf", &Variables::IsSupersetOf,
+          py::arg("vars"), doc.Variables.erase.doc_1args_vars)
+      .def("include", &Variables::include, py::arg("key"),
+          doc.Variables.include.doc)
+      .def("__contains__", &Variables::include, "Alias of ``include``.")
+      .def("IsSubsetOf", &Variables::IsSubsetOf, py::arg("vars"),
+          doc.Variables.IsSubsetOf.doc)
+      .def("IsSupersetOf", &Variables::IsSupersetOf, py::arg("vars"),
           doc.Variables.IsSupersetOf.doc)
-      .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf,
+      .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf, py::arg("vars"),
           doc.Variables.IsStrictSubsetOf.doc)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf,
-          doc.Variables.IsStrictSupersetOf.doc)
-      .def("EqualTo", [](const Variables& self,
-                          const Variables& vars) { return self == vars; })
+          py::arg("vars"), doc.Variables.IsStrictSupersetOf.doc)
+      .def("EqualTo",
+          [](const Variables& self, const Variables& vars) {
+            return self == vars;
+          },
+          py::arg("vars"), doc.Variables.EqualTo.doc)
       .def("__iter__",
-          [](const Variables& vars) {
-            return py::make_iterator(vars.begin(), vars.end());
+          [](const Variables& self) {
+            return py::make_iterator(self.begin(), self.end());
           },
           // Keep alive, reference: `return` keeps `self` alive
           py::keep_alive<0, 1>())
@@ -198,16 +203,18 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self - py::self)
       .def(py::self - Variable());
 
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  m.def("intersect", [](const Variables& vars1, const Variables& vars2) {
-    return intersect(vars1, vars2);
-  });
+  m.def("intersect",
+      [](const Variables& vars1, const Variables& vars2) {
+        return intersect(vars1, vars2);
+      },
+      py::arg("vars1"), py::arg("vars2"), doc.intersect.doc);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Expression> expr_cls(m, "Expression", doc.Expression.doc);
   expr_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
-      .def(py::init<double>(), doc.Expression.ctor.doc_1args_d)
-      .def(py::init<const Variable&>(), doc.Expression.ctor.doc_1args_var)
+      .def(py::init<double>(), py::arg("d"), doc.Expression.ctor.doc_1args_d)
+      .def(py::init<const Variable&>(), py::arg("var"),
+          doc.Expression.ctor.doc_1args_var)
       .def("__str__", &Expression::to_string)
       .def("__repr__",
           [](const Expression& self) {
@@ -233,20 +240,21 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Expression& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
           },
-          doc.Expression.EvaluatePartial.doc)
+          py::arg("env"), doc.Expression.EvaluatePartial.doc)
       .def("GetVariables", &Expression::GetVariables,
           doc.Expression.GetVariables.doc)
       .def("Substitute",
           [](const Expression& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
-          doc.Expression.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc.Expression.Substitute.doc_2args)
       .def("Substitute",
           [](const Expression& self, const Substitution& s) {
             return self.Substitute(s);
           },
-          doc.Expression.Substitute.doc_1args)
-      .def("EqualTo", &Expression::EqualTo, doc.Expression.EqualTo.doc)
+          py::arg("s"), doc.Expression.Substitute.doc_1args)
+      .def("EqualTo", &Expression::EqualTo, py::arg("e"),
+          doc.Expression.EqualTo.doc)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -284,12 +292,21 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self /= Variable())
       .def(py::self /= double())
       // Pow.
-      .def("__pow__", [](const Expression& self,
-                          const double other) { return pow(self, other); })
-      .def("__pow__", [](const Expression& self,
-                          const Variable& other) { return pow(self, other); })
-      .def("__pow__", [](const Expression& self,
-                          const Expression& other) { return pow(self, other); })
+      .def("__pow__",
+          [](const Expression& self, const double other) {
+            return pow(self, other);
+          },
+          py::arg("other"))
+      .def("__pow__",
+          [](const Expression& self, const Variable& other) {
+            return pow(self, other);
+          },
+          py::arg("other"))
+      .def("__pow__",
+          [](const Expression& self, const Expression& other) {
+            return pow(self, other);
+          },
+          py::arg("other"))
       // Unary Plus.
       .def(+py::self)
       // Unary Minus.
@@ -321,9 +338,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != py::self)
       .def(py::self != Variable())
       .def(py::self != double())
-      .def("Differentiate", &Expression::Differentiate,
+      .def("Differentiate", &Expression::Differentiate, py::arg("x"),
           doc.Expression.Differentiate.doc)
-      .def("Jacobian", &Expression::Jacobian, doc.Expression.Jacobian.doc)
+      .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
+          doc.Expression.Jacobian.doc)
       // TODO(eric.cousineau): Figure out how to consolidate with the `math`
       // methods.
       .def("log", &symbolic::log, doc.log.doc)
@@ -351,14 +369,15 @@ PYBIND11_MODULE(symbolic, m) {
   // yield the same parity with AutoDiff.
   pydrake::internal::BindSymbolicMathOverloads(&m);
 
-  m.def("if_then_else", &symbolic::if_then_else);
+  m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
+      py::arg("e_then"), py::arg("e_else"), doc.if_then_else.doc);
 
   m.def("Jacobian",
       [](const Eigen::Ref<const VectorX<Expression>>& f,
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },
-      doc.Expression.Jacobian.doc);
+      py::arg("f"), py::arg("vars"), doc.Expression.Jacobian.doc);
 
   m.def("Evaluate",
       [](const MatrixX<Expression>& M, const Environment::map& env,
@@ -388,27 +407,27 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Formula& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.Formula.Evaluate.doc_2args)
+          py::arg("env"), doc.Formula.Evaluate.doc_2args)
       .def("Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
-          doc.Formula.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
       .def("Substitute",
           [](const Formula& self, const Variable& var1, const Variable& var2) {
             return self.Substitute(var1, var2);
           },
-          doc.Formula.Substitute.doc_2args)
+          py::arg("var1"), py::arg("var2"), doc.Formula.Substitute.doc_2args)
       .def("Substitute",
           [](const Formula& self, const Variable& var, const double c) {
             return self.Substitute(var, c);
           },
-          doc.Formula.Substitute.doc_2args)
+          py::arg("var"), py::arg("c"), doc.Formula.Substitute.doc_2args)
       .def("Substitute",
           [](const Formula& self, const Substitution& s) {
             return self.Substitute(s);
           },
-          doc.Formula.Substitute.doc_1args)
+          py::arg("s"), doc.Formula.Substitute.doc_1args)
       .def("to_string", &Formula::to_string, doc.Formula.to_string.doc)
       .def("__str__", &Formula::to_string)
       .def("__repr__",
@@ -452,12 +471,13 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
-      .def(py::init<const Variable&>(), doc.Monomial.ctor.doc_1args_var)
-      .def(py::init<const Variable&, int>(),
-          doc.Monomial.ctor.doc_2args_var_exponent)
-      .def(py::init<const map<Variable, int>&>(),
+      .def(py::init<const Variable&>(), py::arg("var"),
+          doc.Monomial.ctor.doc_1args_var)
+      .def(py::init<const Variable&, int>(), py::arg("vars"),
+          py::arg("exponents"), doc.Monomial.ctor.doc_2args_var_exponent)
+      .def(py::init<const map<Variable, int>&>(), py::arg("powers"),
           doc.Monomial.ctor.doc_1args_powers)
-      .def("degree", &Monomial::degree, doc.Monomial.degree.doc)
+      .def("degree", &Monomial::degree, py::arg("var"), doc.Monomial.degree.doc)
       .def("total_degree", &Monomial::total_degree,
           doc.Monomial.total_degree.doc)
       .def(py::self * py::self)
@@ -473,9 +493,11 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Monomial& self) {
             return fmt::format("<Monomial \"{}\">", self);
           })
-      .def(
-          "EqualTo", [](const Monomial& self,
-                         const Monomial& monomial) { return self == monomial; })
+      .def("EqualTo", [](const Monomial& self,
+                          const Monomial& monomial) { return self == monomial; }
+          // Add doc when https://github.com/RobotLocomotion/drake/issues/12075
+          // is closed.
+          )
       .def("GetVariables", &Monomial::GetVariables,
           doc.Monomial.GetVariables.doc)
       .def("get_powers", &Monomial::get_powers, py_reference_internal,
@@ -486,9 +508,9 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Monomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.Monomial.Evaluate.doc)
+          py::arg("env"), doc.Monomial.Evaluate.doc)
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal,
-          doc.Monomial.pow_in_place.doc)
+          py::arg("p"), doc.Monomial.pow_in_place.doc)
       .def("__pow__",
           [](const Monomial& self, const int p) { return pow(self, p); });
 
@@ -570,7 +592,7 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Polynomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.Polynomial.Evaluate.doc)
+          py::arg("env"), doc.Polynomial.Evaluate.doc)
       // TODO(Eric.Cousineau): add python binding for symbolic::Environment.
       .def("EvaluatePartial",
           [](const Polynomial& self, const Environment::map& env) {
@@ -584,11 +606,11 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("var"), py::arg("c"),
           doc.Polynomial.EvaluatePartial.doc_2args)
       .def("Jacobian",
-          [](const Polynomial& p,
+          [](const Polynomial& self,
               const Eigen::Ref<const VectorX<Variable>>& vars) {
-            return p.Jacobian(vars);
+            return self.Jacobian(vars);
           },
-          doc.Polynomial.Jacobian.doc);
+          py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
   // We have this line because pybind11 does not permit transitive
   // conversions. See
