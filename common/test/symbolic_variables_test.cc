@@ -344,6 +344,77 @@ TEST_F(VariablesTest, ToString) {
   EXPECT_EQ(vars4.to_string(), "{z, w, v}");
   EXPECT_EQ(vars5.to_string(), "{w, v}");
 }
+
+TEST_F(VariablesTest, Equality) {
+  const Variables vars0{};
+  const Variables vars1{x_, y_, z_};
+  const Variables vars2{x_, y_};
+  const Variables vars3{x_, y_, z_};
+
+  // Test operator==
+  EXPECT_TRUE(vars0 == vars0);
+  EXPECT_FALSE(vars0 == vars1);
+  EXPECT_FALSE(vars0 == vars2);
+  EXPECT_FALSE(vars0 == vars3);
+
+  EXPECT_FALSE(vars1 == vars0);
+  EXPECT_TRUE(vars1 == vars1);
+  EXPECT_FALSE(vars1 == vars2);
+  EXPECT_TRUE(vars1 == vars3);
+
+  EXPECT_FALSE(vars2 == vars0);
+  EXPECT_FALSE(vars2 == vars1);
+  EXPECT_TRUE(vars2 == vars2);
+  EXPECT_FALSE(vars2 == vars3);
+
+  EXPECT_FALSE(vars3 == vars0);
+  EXPECT_TRUE(vars3 == vars1);
+  EXPECT_FALSE(vars3 == vars2);
+  EXPECT_TRUE(vars3 == vars3);
+
+  // Test EqualTo
+  EXPECT_TRUE(vars0.EqualTo(vars0));
+  EXPECT_FALSE(vars0.EqualTo(vars1));
+  EXPECT_FALSE(vars0.EqualTo(vars2));
+  EXPECT_FALSE(vars0.EqualTo(vars3));
+
+  EXPECT_FALSE(vars1.EqualTo(vars0));
+  EXPECT_TRUE(vars1.EqualTo(vars1));
+  EXPECT_FALSE(vars1.EqualTo(vars2));
+  EXPECT_TRUE(vars1.EqualTo(vars3));
+
+  EXPECT_FALSE(vars2.EqualTo(vars0));
+  EXPECT_FALSE(vars2.EqualTo(vars1));
+  EXPECT_TRUE(vars2.EqualTo(vars2));
+  EXPECT_FALSE(vars2.EqualTo(vars3));
+
+  EXPECT_FALSE(vars3.EqualTo(vars0));
+  EXPECT_TRUE(vars3.EqualTo(vars1));
+  EXPECT_FALSE(vars3.EqualTo(vars2));
+  EXPECT_TRUE(vars3.EqualTo(vars3));
+
+  // Test operator!=
+  EXPECT_FALSE(vars0 != vars0);
+  EXPECT_TRUE(vars0 != vars1);
+  EXPECT_TRUE(vars0 != vars2);
+  EXPECT_TRUE(vars0 != vars3);
+
+  EXPECT_TRUE(vars1 != vars0);
+  EXPECT_FALSE(vars1 != vars1);
+  EXPECT_TRUE(vars1 != vars2);
+  EXPECT_FALSE(vars1 != vars3);
+
+  EXPECT_TRUE(vars2 != vars0);
+  EXPECT_TRUE(vars2 != vars1);
+  EXPECT_FALSE(vars2 != vars2);
+  EXPECT_TRUE(vars2 != vars3);
+
+  EXPECT_TRUE(vars3 != vars0);
+  EXPECT_FALSE(vars3 != vars1);
+  EXPECT_TRUE(vars3 != vars2);
+  EXPECT_FALSE(vars3 != vars3);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

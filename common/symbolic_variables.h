@@ -122,7 +122,8 @@ class Variables {
   /** Return true if @p vars is a strict superset of the Variables. */
   bool IsStrictSupersetOf(const Variables& vars) const;
 
-  friend bool operator==(const Variables& vars1, const Variables& vars2);
+  /** Returns true if @p vars has the same set of variables as this. */
+  bool EqualTo(const Variables& vars) const;
 
   friend bool operator<(const Variables& vars1, const Variables& vars2);
 
@@ -136,6 +137,12 @@ class Variables {
 
   std::set<Variable> vars_;
 };
+
+/** Returns true if @p vars1 and @p vars2 have the same set of variables. */
+bool operator==(const Variables& vars1, const Variables& vars2);
+
+/** Returns true if @p vars1 and @p vars2 are not the same. */
+bool operator!=(const Variables& vars1, const Variables& vars2);
 
 /** Updates @p var1 with the result of set-union(@p var1, @p var2). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

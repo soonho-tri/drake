@@ -69,9 +69,17 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
   return IsSupersetOf(vars);
 }
 
+bool Variables::EqualTo(const Variables& vars) const {
+  return std::equal(vars_.begin(), vars_.end(), vars.vars_.begin(),
+                    vars.vars_.end(), std::equal_to<Variable>{});
+}
+
 bool operator==(const Variables& vars1, const Variables& vars2) {
-  return std::equal(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
-                    vars2.vars_.end(), std::equal_to<Variable>{});
+  return vars1.EqualTo(vars2);
+}
+
+bool operator!=(const Variables& vars1, const Variables& vars2) {
+  return !(vars1 == vars2);
 }
 
 bool operator<(const Variables& vars1, const Variables& vars2) {
