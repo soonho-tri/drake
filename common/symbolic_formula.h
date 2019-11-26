@@ -182,6 +182,13 @@ class Formula {
    */
   bool Evaluate(RandomGenerator* random_generator) const;
 
+  /** Partially evaluates this expression using an environment @p
+   * env.
+   *
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  Formula EvaluatePartial(const Environment& env) const;
+
   /** Returns a copy of this formula replacing all occurrences of @p var
    * with @p e.
    * @throws std::runtime_error if NaN is detected during substitution.

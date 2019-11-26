@@ -92,6 +92,17 @@ bool Formula::Evaluate(RandomGenerator* const random_generator) const {
   return Evaluate(Environment{}, random_generator);
 }
 
+Formula Formula::EvaluatePartial(const Environment& env) const {
+  if (env.empty()) {
+    return *this;
+  }
+  Substitution subst;
+  for (const std::pair<const Variable, double>& p : env) {
+    subst.emplace(p.first, p.second);
+  }
+  return Substitute(subst);
+}
+
 Formula Formula::Substitute(const Variable& var, const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return Formula{ptr_->Substitute({{var, e}})};
