@@ -552,6 +552,18 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
                               Substitute(M, subst).inverse(), 1e-10));
 }
 
+TEST_F(SymbolicExpressionMatrixTest, SparseMatrixMultiplication) {
+  Eigen::SparseMatrix<Expression> M1(2, 2);
+  M1.coeffRef(0, 0) = x_ * y_;
+  M1.coeffRef(1, 1) = x_ + y_;
+
+  Eigen::SparseMatrix<Expression> M2(2, 2);
+  M2.coeffRef(0, 0) = 3 + x_ * y_;
+  M2.coeffRef(1, 1) = 4 + x_ + y_;
+
+  std::cout << (M1 * M2) << "\n";
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
