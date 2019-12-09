@@ -1,5 +1,36 @@
 ---
-Checks: 'clang-diagnostic-*,clang-analyzer-*,cppcoreguidelines-*,google-*,modernize-*,performance-*,readability-*,-modernize-use-using,-modernize-use-bool-literals,-readability-named-parameter,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-static-cast-downcast,-modernize-use-transparent-functors,-readability-else-after-return'
+Checks: >
+  abseil-*,
+  bugprone-*,
+  clang-analyzer-*,
+  clang-diagnostic-*,
+  cppcoreguidelines-*,
+  google-*,
+  hicpp-*,
+  llvm-*,
+  misc-*,
+  misperformance-*,
+  modernize-*,
+  readability-*,
+  -clang-diagnostic-pragma-once-outside-header,
+  -cppcoreguidelines-avoid-goto,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-static-cast-downcast,
+  -hicpp-avoid-goto,
+  -hicpp-no-array-decay,
+  -llvm-header-guard,
+  -modernize-use-bool-literals,
+  -modernize-use-trailing-return-type,
+  -modernize-use-transparent-functors,
+  -modernize-use-using,
+  -modernize-concat-nested-namespaces,
+  -readability-else-after-return,
+  -readability-implicit-bool-cast,
+  -readability-implicit-bool-conversion,
+  -readability-named-parameter,
+  -readability-redundant-declaration,
 
 CheckOptions:
   - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }
