@@ -15,6 +15,23 @@ using symbolic::Jacobian;
 using symbolic::Variable;
 using symbolic::Variables;
 
+SymbolicVectorSystemBuilder
+SymbolicVectorSystemBuilder::DiscretizeDynamicsForwardEuler(
+    const double time_period) {
+  // The current system should be continuous.
+  DRAKE_DEMAND(time_period_ == 0.0);
+  DRAKE_DEMAND(time_period > 0.0);
+
+  time_period_ = time_period;
+
+  // Discretize dynamics using Forward-Euler.
+  for (int i = 0; i < dynamics_.size(); ++i) {
+    // xdot = f(x, u, p, t)  =>  x[n+1] = x[n] + Δt*xdot
+    dynamics_[i] = state_vars_[i] + time_period * dynamics_[i];
+  }
+  return *this;
+}
+
 template <typename T>
 SymbolicVectorSystem<T>::SymbolicVectorSystem(
     const std::optional<Variable>& time,

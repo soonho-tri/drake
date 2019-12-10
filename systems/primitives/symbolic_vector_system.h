@@ -394,6 +394,14 @@ class SymbolicVectorSystemBuilder {
   const VectorX<symbolic::Expression>& output() const { return output_; }
   /// Returns the time period.
   double time_period() const { return time_period_; }
+
+  /// Discretizes the system dynamics using the forward Euler method.
+  ///
+  /// @pre The current system should be continuous.
+  /// @pre @p time_period > 0.0.
+  SymbolicVectorSystemBuilder DiscretizeDynamicsForwardEuler(
+      double time_period);
+
   /// @}
  private:
   std::optional<symbolic::Variable> time_var_{std::nullopt};
