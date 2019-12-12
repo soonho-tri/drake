@@ -4,6 +4,8 @@
 #include <unordered_map>
 
 #include <fmt/format.h>
+#include <inja/inja.hpp>
+#include <nlohmann/json.hpp>
 
 namespace drake {
 namespace symbolic {

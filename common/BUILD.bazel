@@ -228,6 +228,8 @@ drake_cc_library(
         ":polynomial",
         ":random",
         "@fmt",
+        "@inja",
+        "@json",
     ],
 )
 
