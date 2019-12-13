@@ -241,23 +241,24 @@ string CodeGenVisitor::VisitUninterpretedFunction(const Expression&) const {
 
 string CodeGen(const string& function_name, const vector<Variable>& parameters,
                const Expression& e) {
-  ostringstream oss;
-  // Add header for the main function.
-  oss << "double " << function_name << "(const double* p) {\n";
-  // Codegen the expression.
-  oss << "    return " << CodeGenVisitor{parameters}.CodeGen(e) << ";\n";
-  // Add footer for the main function.
-  oss << "}\n";
-  // <function_name>_meta_t type.
-  oss << "typedef struct {\n"
-         "    /* p: input, vector */\n"
-         "    struct { int size; } p;\n"
-         "} "
-      << function_name << "_meta_t;\n";
-  // <function_name>_meta().
-  oss << function_name << "_meta_t " << function_name << "_meta() { return {{"
-      << parameters.size() << "}}; }\n";
-  return oss.str();
+  const string templ{
+      R"(double {{ function_name }}(const double* p) {
+  return {{ code }};
+}
+typedef struct {
+  /* p: input, vector */
+  struct {
+    int size;
+  } p;
+} {{ function_name }}_meta_t;
+aaa {{ function_name }}_meta_t {{ function_name }}_meta() { return {{{{ {{ parameters_size }} }}; }
+)"};
+  const nlohmann::json json_data{
+      {"function_name", function_name},
+      {"code", CodeGenVisitor{parameters}.CodeGen(e)},
+      {"parameters_size", parameters.size()},
+  };
+  return inja::render(templ, json_data);
 }
 
 namespace internal {
@@ -265,16 +266,33 @@ void CodeGenDenseData(const string& function_name,
                       const vector<Variable>& parameters,
                       const Expression* const data, const int size,
                       ostream* const os) {
-  // Add header for the main function.
-  (*os) << "void " << function_name << "(const double* p, double* m) {\n";
-  const CodeGenVisitor visitor{parameters};
-  for (int i = 0; i < size; ++i) {
-    (*os) << "    "
-          << "m[" << i << "] = " << visitor.CodeGen(data[i]) << ";\n";
-  }
-  // Add footer for the main function.
-  (*os) << "}\n";
+  const string templ{
+      R"(void {{ function_name }}(const double* {{ parameter_name }}, double* {{ matrix_name }}) {
+## for item in items
+  {{ matrix_name }}[{{ item.idx }}] = {{ item.code }};
+## endfor
 }
+)"};
+  nlohmann::json json_data{
+      {"function_name", function_name},
+      {"parameter_name", ""},  // Update it below if used in the body.
+      {"matrix_name", "m"},
+      {"items", nlohmann::json::array() /* empty */},
+  };
+  const CodeGenVisitor visitor{parameters};
+  bool include_parameter{false};
+  for (int i = 0; i < size; ++i) {
+    if (!include_parameter && !data[i].GetVariables().empty()) {
+      include_parameter = true;
+    }
+    json_data["items"].push_back(
+        {{"idx", i}, {"code", visitor.CodeGen(data[i])}});
+  }
+  if (include_parameter) {
+    json_data["parameter_name"] = "p";
+  }
+  inja::render_to(*os, templ, json_data);
+}  // namespace internal
 
 void CodeGenDenseMeta(const string& function_name, const int parameter_size,
                       const int rows, const int cols, ostream* const os) {

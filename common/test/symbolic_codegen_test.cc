@@ -22,11 +22,13 @@ string MakeScalarFunctionCode(const string& function_name, const int n,
   // Note that fmtlib requires to escape "{'" and "}" using "{{" and "}}".
   return fmt::format(
       R"""(double {0}(const double* p) {{
-    return {1};
+  return {1};
 }}
 typedef struct {{
-    /* p: input, vector */
-    struct {{ int size; }} p;
+  /* p: input, vector */
+  struct {{
+    int size;
+  }} p;
 }} {0}_meta_t;
 {0}_meta_t {0}_meta() {{ return {{{{{2}}}}}; }}
 )""",
@@ -45,16 +47,18 @@ string MakeDenseMatrixFunctionCode(const string& function_name, const int in,
   oss << fmt::format("void {0}(const double* p, double* m) {{\n",
                      function_name);
   for (size_t i{0}; i < expressions.size(); ++i) {
-    oss << fmt::format("    m[{0}] = {1};\n", i, expressions[i]);
+    oss << fmt::format("  m[{0}] = {1};\n", i, expressions[i]);
   }
   oss << "}\n";
   // f_meta_t.
   oss << fmt::format(
       R"""(typedef struct {{
-    /* p: input, vector */
-    struct {{ int size; }} p;
-    /* m: output, matrix */
-    struct {{ int rows; int cols; }} m;
+  /* p: input, vector */
+  struct {{
+    int size;
+  }} p;
+  /* m: output, matrix */
+  struct {{ int rows; int cols; }} m;
 }} {0}_meta_t;
 {0}_meta_t {0}_meta() {{ return {{{{{1}}}, {{{2}, {3}}}}}; }}
 )""",
