@@ -433,7 +433,8 @@ class TestMathematicalProgram(unittest.TestCase):
         a = prog.NewContinuousVariables(1, "a")
         # e = (a + 1)x² + 2ax + 3a.
         e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
-        self.assertEqual(prog.MakePolynomial(e).str(), "")
+        self.assertEqual(prog.MakePolynomial(e).ToExpression().str(),
+                         "(3 * a(0) + 2 * (x(0) * a(0)) + (pow(x(0), 2) * (1 + a(0))))")
 
     def test_equality_between_polynomials(self):
         prog = mp.MathematicalProgram()
