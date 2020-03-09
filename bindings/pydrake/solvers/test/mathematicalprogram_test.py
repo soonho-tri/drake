@@ -427,6 +427,14 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+    def test_make_polynomial(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        a = prog.NewContinuousVariables(1, "a")
+        # e = (a + 1)x² + 2ax + 3a.
+        e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
+        self.assertEqual(prog.MakePolynomial(e).str(), "")
+
     def test_equality_between_polynomials(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
