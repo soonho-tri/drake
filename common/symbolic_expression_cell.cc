@@ -144,6 +144,9 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
 
 Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
                                 const Expression& e3) {
+  DRAKE_ASSERT(
+      ExpandMultiplication(e1, e2).EqualTo(ExpandMultiplication(e1, e2)));
+  DRAKE_ASSERT(e3.EqualTo(e3.Expand()));
   return ExpandMultiplication(ExpandMultiplication(e1, e2), e3);
 }
 
@@ -1138,10 +1141,10 @@ Expression ExpressionDiv::Expand() const {
     // Simplifies the 'division by a constant' case, using DivExpandVisitor
     // defined above.
     return DivExpandVisitor{}
-        .Simplify(e1, get_constant_value(e2))
+        .Simplify(e1.Expand(), get_constant_value(e2))
         .set_expanded();
   } else {
-    return (e1 / e2).set_expanded();
+    return (e1.Expand() / e2.Expand()).set_expanded();
   }
 }
 
