@@ -248,6 +248,12 @@ string Expression::to_string() const {
   return oss.str();
 }
 
+string Expression::ToLatex() const {
+  ostringstream oss;
+  ptr_->ToLatex(oss);
+  return oss.str();
+}
+
 Expression operator+(Expression lhs, const Expression& rhs) {
   lhs += rhs;
   return lhs;

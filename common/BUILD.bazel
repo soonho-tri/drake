@@ -1134,6 +1134,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_tolatex_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_transform_test",
     deps = [
         ":essential",

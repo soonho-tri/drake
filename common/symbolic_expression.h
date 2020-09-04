@@ -335,6 +335,9 @@ class Expression {
   /** Returns string representation of Expression. */
   [[nodiscard]] std::string to_string() const;
 
+  /** Returns LaTeX code for this Expression. */
+  [[nodiscard]] std::string ToLatex() const;
+
   /** Returns zero. */
   static Expression Zero();
   /** Returns one. */
