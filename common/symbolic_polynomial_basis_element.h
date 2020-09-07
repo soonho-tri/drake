@@ -51,7 +51,7 @@ class PolynomialBasisElement {
    * Constructs a polynomial basis with empty var_to_degree map. This element
    * should be interpreted as 1.
    */
-  PolynomialBasisElement();
+  PolynomialBasisElement() = default;
 
   /**
    * Constructs a polynomial basis given the variable and the degree of that

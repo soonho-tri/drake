@@ -137,8 +137,9 @@ RationalFunction& RationalFunction::operator/=(double c) {
   return *this;
 }
 
-RationalFunction operator-(const RationalFunction& f) {
-  return RationalFunction(-f.numerator(), f.denominator());
+RationalFunction operator-(RationalFunction f) {
+  f.numerator_ *= -1;
+  return f;
 }
 
 RationalFunction operator+(RationalFunction f1, const RationalFunction& f2) {

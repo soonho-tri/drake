@@ -267,9 +267,9 @@ TEST_F(SymbolicGenericPolynomialTest, Evaluate) {
       {var_x_, -7.0},
       {var_z_, -2.0},
   }};
-  double dummy{};
+  volatile double dummy{};
   EXPECT_THROW(dummy = p.Evaluate(partial_env), std::invalid_argument);
-  unused(dummy);
+  // unused(dummy);
 }
 
 TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate1) {

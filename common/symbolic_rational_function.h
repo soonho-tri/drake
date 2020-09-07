@@ -85,6 +85,12 @@ class RationalFunction {
   RationalFunction& operator/=(double c);
 
   /**
+   * Unary minus operation for rational function.
+   * if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x)
+   */
+  friend RationalFunction operator-(RationalFunction f);
+
+  /**
    * Returns true if this rational function and f are structurally equal.
    */
   [[nodiscard]] bool EqualTo(const RationalFunction& f) const;
@@ -111,12 +117,6 @@ class RationalFunction {
   Polynomial numerator_;
   Polynomial denominator_;
 };
-
-/**
- * Unary minus operation for rational function.
- * if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x)
- */
-RationalFunction operator-(const RationalFunction& f);
 
 RationalFunction operator+(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator+(RationalFunction f, const Polynomial& p);
