@@ -671,6 +671,12 @@ class TestSymbolicExpression(unittest.TestCase):
                y: 4.0}
         self.assertEqual((x + y).Evaluate(env),
                          env[x] + env[y])
+        self.assertEqual((x + y).Evaluate({np.array([x,y]),
+                                           [1.0, 2.0]}),
+                         env[x] + env[y])
+        self.assertEqual((x + y).Evaluate([[x,y], [1.0, 2.0]]),
+                         env[x] + env[y])
+
 
     def test_evaluate_with_random_generator(self):
         g = pydrake.common.RandomGenerator()

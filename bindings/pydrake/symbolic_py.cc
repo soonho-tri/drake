@@ -303,6 +303,46 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Expression.Evaluate.doc_2args)
       .def(
           "Evaluate",
+          [](const Expression& self, py::list l, RandomGenerator* generator) {
+            Environment env;
+            std::cout << "Eval + List\n";
+            auto it = l.begin();
+            while (it != l.end()) {
+              const auto& key = *(it++);
+              if (it == l.end()) {
+                throw std::runtime_error("list length should be even.");
+              }
+              const auto& value = *(it++);
+              std::cout << "key=" << key << "\t";
+              std::cout << "key T=" << key.get_type() << "\t";
+              std::cout << "value=" << value << "\t";
+              std::cout << "value T=" << value.get_type();
+              std::cout << std::endl;
+            }
+            return 1.0;
+            return self.Evaluate(Environment{env}, generator);
+          },
+          py::arg("env") = Environment::map{}, py::arg("generator") = nullptr,
+          "Blabla")
+      .def(
+          "Evaluate",
+          [](const Expression& self, py::dict d, RandomGenerator* generator) {
+            Environment env;
+            std::cout << "Eval + Dict\n";
+            for (const auto& item : d) {
+              std::cout << "key=" << item.first << "\t";
+              std::cout << "key T=" << item.first.get_type() << "\t";
+              std::cout << "value=" << item.second << "\t";
+              std::cout << "value T=" << item.second.get_type();
+              std::cout << std::endl;
+            }
+            return 2.0;
+            return self.Evaluate(Environment{env}, generator);
+          },
+          py::arg("env") = Environment::map{}, py::arg("generator") = nullptr,
+          "Blabla")
+      .def(
+          "Evaluate",
           [](const Expression& self, RandomGenerator* generator) {
             return self.Evaluate(generator);
           },
