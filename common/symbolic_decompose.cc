@@ -478,7 +478,7 @@ DecomposeLumpedParameters(
 
   VectorX<Expression> w0(f.size());
   for (int i = 0; i < f.size(); i++) {
-    auto const[w, alpha, this_w0] =
+    const auto [w, alpha, this_w0] =
         visitor.Decompose(f[i], Variables(parameters));
     w0[i] = this_w0;
     for (int j = 0; j < alpha.size(); j++) {
