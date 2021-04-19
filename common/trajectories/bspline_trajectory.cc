@@ -148,8 +148,10 @@ BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
 }
 
 template <typename T>
-BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
-    int start_row, int start_col, int block_rows, int block_cols) const {
+BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(int start_row,
+                                                     int start_col,
+                                                     int block_rows,
+                                                     int block_cols) const {
   return CopyWithSelector([&start_row, &start_col, &block_rows,
                            &block_cols](const MatrixX<T>& full) {
     return full.block(start_row, start_col, block_rows, block_cols);
@@ -170,8 +172,8 @@ boolean<T> BsplineTrajectory<T>::operator==(
       this->cols() == other.cols()) {
     boolean<T> result{true};
     for (int i = 0; i < this->num_control_points(); ++i) {
-      result = result && all(this->control_points()[i].array() ==
-                             other.control_points()[i].array());
+      result = result && drake::all(this->control_points()[i].array() ==
+                                    other.control_points()[i].array());
       if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
         break;
       }
@@ -185,7 +187,7 @@ boolean<T> BsplineTrajectory<T>::operator==(
 template <typename T>
 bool BsplineTrajectory<T>::CheckInvariants() const {
   return static_cast<int>(control_points_.size()) ==
-      basis_.num_basis_functions();
+         basis_.num_basis_functions();
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

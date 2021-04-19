@@ -813,6 +813,21 @@ template <>
 struct numeric_limits<drake::symbolic::Expression>
     : public std::numeric_limits<double> {};
 
+/* Provides std::numeric_limits<drake::symbolic::Expression>. */
+template <>
+struct is_integral<drake::symbolic::Expression> {
+  static const bool value;
+};
+
+inline const bool is_integral<drake::symbolic::Expression>::value = false;
+
+// template <>
+// struct is_arithmetic<drake::symbolic::Expression> {
+//   static bool value;
+// };
+
+// is_integral<drake::symbolic::Expression>::value = false;
+
 /// Provides std::uniform_real_distribution, U(a, b), for symbolic expressions.
 ///
 /// When operator() is called, it returns a symbolic expression `a + (b - a) *
@@ -1217,6 +1232,16 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+
+namespace internal {
+
+template <>
+inline EIGEN_DEVICE_FUNC bool isfinite_impl(
+    const drake::symbolic::Expression&) {
+  return false;
+}
+
+}  // namespace internal
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
