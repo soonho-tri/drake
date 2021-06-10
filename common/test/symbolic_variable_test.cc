@@ -75,6 +75,13 @@ TEST_F(VariableTest, GetName) {
   EXPECT_EQ(x_.get_name(), x_prime.get_name());
 }
 
+TEST_F(VariableTest, GetSetType) {
+  Variable x{"x", Variable::Type::BINARY};
+  EXPECT_EQ(x.get_type(), Variable::Type::BINARY);
+  x.set_type(Variable::Type::CONTINUOUS);
+  EXPECT_EQ(x.get_type(), Variable::Type::CONTINUOUS);
+}
+
 TEST_F(VariableTest, MoveCopyPreserveId) {
   Variable x{"x"};
   const size_t x_id{x.get_id()};

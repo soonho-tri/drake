@@ -75,6 +75,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("get_id", &Variable::get_id, var_doc.get_id.doc)
       .def("get_name", &Variable::get_name, var_doc.get_name.doc)
       .def("get_type", &Variable::get_type, var_doc.get_type.doc)
+      .def("set_type", &Variable::set_type, py::arg("ty"), var_doc.set_type.doc)
       .def("__str__", &Variable::to_string, var_doc.to_string.doc)
       .def("__repr__",
           [](const Variable& self) {

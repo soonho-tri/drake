@@ -88,6 +88,12 @@ class TestSymbolicVariable(unittest.TestCase):
         g = sym.Variable('g', sym.Variable.Type.RANDOM_GAUSSIAN)
         self.assertEqual(g.get_type(), sym.Variable.Type.RANDOM_GAUSSIAN)
 
+    def test_set_type(self):
+        x = sym.Variable('x', sym.Variable.Type.INTEGER)
+        self.assertEqual(x.get_type(), sym.Variable.Type.INTEGER)
+        x.set_type(ty=sym.Variable.Type.CONTINUOUS)
+        self.assertEqual(x.get_type(), sym.Variable.Type.CONTINUOUS)
+
     def test_repr(self):
         self.assertEqual(repr(x), "Variable('x', Continuous)")
 

@@ -78,6 +78,9 @@ class Variable {
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
+  /// Sets the type of this variable with `ty`.
+  void set_type(Type ty);
+
   /// Checks the equality of two variables based on their ID values.
   [[nodiscard]] bool equal_to(const Variable& v) const {
     return get_id() == v.get_id();

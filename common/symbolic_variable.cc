@@ -44,6 +44,8 @@ string Variable::to_string() const {
   return oss.str();
 }
 
+void Variable::set_type(Variable::Type ty) { type_ = ty; }
+
 ostream& operator<<(ostream& os, const Variable& var) {
   os << var.get_name();
   return os;
