@@ -368,7 +368,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
       .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
       .value("kCsdp", SolverType::kCsdp, doc.SolverType.kCsdp.doc)
-      .value("kDReal", SolverType::kDReal, doc.SolverType.kDReal.doc)
+      .value("kDreal", SolverType::kDreal, doc.SolverType.kDreal.doc)
       .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP,
           doc.SolverType.kEqualityConstrainedQP.doc)
       .value("kGurobi", SolverType::kGurobi, doc.SolverType.kGurobi.doc)
@@ -1256,7 +1256,7 @@ top-level documentation for :py:mod:`pydrake.math`.
             return Y;
           },
           py::arg("binding"), py::arg("prog_var_vals"),
-          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding 
+          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding
 for every column of ``prog_var_vals``. )""")
       .def(
           "EvalBinding",

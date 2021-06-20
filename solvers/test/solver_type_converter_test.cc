@@ -18,8 +18,8 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
     case SolverType::kClp:
       return SolverType::kCsdp;
     case SolverType::kCsdp:
-      return SolverType::kDReal;
-    case SolverType::kDReal:
+      return SolverType::kDreal;
+    case SolverType::kDreal:
       return SolverType::kEqualityConstrainedQP;
     case SolverType::kEqualityConstrainedQP:
       return SolverType::kGurobi;
@@ -50,8 +50,7 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
 GTEST_TEST(SolverId, RoundTrip) {
   // Iterate over all known solver types.
   int iterations = 0;
-  for (auto solver_type = successor(std::nullopt);
-       solver_type != std::nullopt;
+  for (auto solver_type = successor(std::nullopt); solver_type != std::nullopt;
        solver_type = successor(solver_type)) {
     ++iterations;
 

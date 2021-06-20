@@ -25,7 +25,7 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return ClpSolver::id();
     case SolverType::kCsdp:
       return CsdpSolver::id();
-    case SolverType::kDReal:
+    case SolverType::kDreal:
       return DrealSolver::id();
     case SolverType::kEqualityConstrainedQP:
       return EqualityConstrainedQPSolver::id();
@@ -59,7 +59,7 @@ std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
   } else if (solver_id == CsdpSolver::id()) {
     return SolverType::kCsdp;
   } else if (solver_id == DrealSolver::id()) {
-    return SolverType::kDReal;
+    return SolverType::kDreal;
   } else if (solver_id == EqualityConstrainedQPSolver::id()) {
     return SolverType::kEqualityConstrainedQP;
   } else if (solver_id == GurobiSolver::id()) {

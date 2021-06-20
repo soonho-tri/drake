@@ -6,7 +6,7 @@ namespace solvers {
 enum class SolverType {
   kClp,
   kCsdp,
-  kDReal,
+  kDreal,
   kEqualityConstrainedQP,
   kGurobi,
   kIpopt,
